@@ -1,0 +1,27 @@
+[package]
+name = "switchboard-vrf-flip"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "switchboard_vrf_flip"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+
+[dependencies]
+anchor-lang = "0.25.0"
+anchor-spl = "0.25.0"
+bytemuck = "1.7.2"
+switchboard-v2 = { version = "0.1.14", features = ["devnet"] }
+# switchboard-v2 = { path = "../../../switchboard-v2/libraries/rs", features = ["devnet"]  }
+solana-program = "1.10.29"
+num-traits = "0.2"
+num-derive = "0.3"
