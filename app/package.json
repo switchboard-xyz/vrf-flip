@@ -36,7 +36,8 @@
   },
   "scripts": {
     "prebuild": "yarn prebuild:copy",
-    "prebuild:copy": "shx rm -rf src/api/*; shx cp -r ../client/* src/api/",
+    "prebuild:copy": "shx rm -rf src/api/*; shx mkdir -p src/api; shx cp -r ../client/* src/api",
+    "postinstall": "yarn prebuild",
     "start": "yarn prebuild && craco start",
     "build": "craco build",
     "test": "craco test",
