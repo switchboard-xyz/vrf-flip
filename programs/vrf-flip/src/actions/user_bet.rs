@@ -217,20 +217,6 @@ impl UserBet<'_> {
             )?;
         }
 
-        let escrow_transfer_amount = params.bet_amount.checked_sub(ctx.accounts.escrow.amount).unwrap_or(params.bet_amount);
-        msg!("transferring {} flip tokens to escrow", escrow_transfer_amount);
-        token::transfer(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info().clone(),
-                Transfer {
-                    from: ctx.accounts.flip_payer.to_account_info(),
-                    to: ctx.accounts.escrow.to_account_info(),
-                    authority: ctx.accounts.authority.clone(),
-                },
-            ),
-            escrow_transfer_amount,
-        )?;
-
         msg!("creating randomness instruction");
         UserState::request_randomness(&RequestRandomness {
             switchboard_program: ctx.accounts.switchboard_program.to_account_info(),
