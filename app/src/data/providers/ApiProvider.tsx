@@ -267,6 +267,8 @@ class ApiState implements PrivateApiInterface {
     this.log(`Building airdrop request...`);
     const request = await user.airdropReq(this.wallet.publicKey);
     await this.packSignAndSubmit(request.ixns, request.signers);
+
+    await this.playPrompt();
   };
 
   /**
