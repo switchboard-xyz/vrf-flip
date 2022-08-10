@@ -175,6 +175,7 @@ yargs(hideBin(process.argv))
           {
             ...user.toJSON(),
             history: undefined,
+            ebuf: undefined,
           },
           undefined,
           2
