@@ -1,7 +1,14 @@
 import * as anchor from "@project-serum/anchor";
 import * as anchor24 from "anchor-24-2";
 import * as spl from "@solana/spl-token-v2";
-import { Cluster, Keypair, PublicKey } from "@solana/web3.js";
+import {
+  Cluster,
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  TransactionInstruction,
+} from "@solana/web3.js";
 import * as sbv2 from "@switchboard-xyz/switchboard-v2";
 import { PROGRAM_ID_CLI } from "./generated/programId";
 import { FlipProgram } from "./types";
@@ -109,4 +116,23 @@ export const tokenAmountToBig = (tokenAmount: anchor.BN, decimals = 9): Big => {
   const result = bigTokenAmount.div(denominator);
   Big.DP = oldDp;
   return result;
+};
+
+export const verifyPayerBalance = async (
+  connection: Connection,
+  payer: PublicKey,
+  minAmount = 0.1 * LAMPORTS_PER_SOL
+): Promise<void> => {
+  const payerBalance = await connection.getBalance(payer);
+  if (payerBalance > minAmount) {
+    return;
+  }
+
+  try {
+    const airdropTxn = await connection.requestAirdrop(
+      payer,
+      1 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    await connection.confirmTransaction(airdropTxn);
+  } catch {}
 };
