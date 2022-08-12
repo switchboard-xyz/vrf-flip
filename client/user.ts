@@ -262,11 +262,13 @@ export class User {
     signers: Signer[];
     account: PublicKey;
   }> {
-    const airdropPromise = verifyPayerBalance(
-      program.provider.connection,
-      payerPubkey,
-      0.3 * LAMPORTS_PER_SOL
-    ).catch();
+    try {
+      await verifyPayerBalance(
+        program.provider.connection,
+        payerPubkey,
+        0.3 * LAMPORTS_PER_SOL
+      );
+    } catch {}
 
     const house = await House.load(program);
     const flipMint = await house.loadMint();
@@ -388,10 +390,6 @@ export class User {
         .instruction(),
     ];
 
-    try {
-      await airdropPromise;
-    } catch {}
-
     return {
       ixns: txnIxns,
       signers: [vrfSecret, escrowKeypair],
@@ -429,11 +427,9 @@ export class User {
     switchboardTokenAccount?: PublicKey,
     payerPubkey = programWallet(this.program as any).publicKey
   ): Promise<{ ixns: TransactionInstruction[]; signers: Signer[] }> {
-    const airdropPromise = verifyPayerBalance(
-      this.program.provider.connection,
-      payerPubkey,
-      0.3 * LAMPORTS_PER_SOL
-    ).catch();
+    try {
+      await verifyPayerBalance(this.program.provider.connection, payerPubkey);
+    } catch {}
 
     const signers: Signer[] = [];
     const ixns: TransactionInstruction[] = [];
@@ -558,10 +554,6 @@ export class User {
         .instruction()
     );
 
-    try {
-      await airdropPromise;
-    } catch {}
-
     return { ixns, signers };
   }
 
@@ -648,11 +640,9 @@ export class User {
   }
 
   async airdropReq(payerPubkey = programWallet(this.program as any).publicKey) {
-    const airdropPromise = verifyPayerBalance(
-      this.program.provider.connection,
-      payerPubkey,
-      0.3 * LAMPORTS_PER_SOL
-    ).catch();
+    try {
+      await verifyPayerBalance(this.program.provider.connection, payerPubkey);
+    } catch {}
 
     const house = await House.load(this.program);
     const flipMint = await house.loadMint();
@@ -690,10 +680,6 @@ export class User {
       );
       ixns.unshift(createTokenAccountIxn);
     }
-
-    try {
-      await airdropPromise;
-    } catch {}
 
     return { ixns, signers: [] };
   }

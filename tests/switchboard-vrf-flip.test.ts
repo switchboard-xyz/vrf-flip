@@ -4,14 +4,9 @@ import * as spl from "@solana/spl-token-v2";
 import { Program } from "@project-serum/anchor";
 import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
 import { AnchorWallet } from "@switchboard-xyz/switchboard-v2";
-import {
-  promiseWithTimeout,
-  sleep,
-  SwitchboardTestContext,
-} from "@switchboard-xyz/sbv2-utils";
-import { GameTypeValue, House, loadVrfContext, User } from "../client";
+import { SwitchboardTestContext } from "@switchboard-xyz/sbv2-utils";
+import { GameTypeValue, House, User } from "../client";
 import { createFlipUser, FlipUser } from "../client/utils";
-import { PublicKey, SYSVAR_RECENT_BLOCKHASHES_PUBKEY } from "@solana/web3.js";
 
 describe("switchboard-vrf-flip", () => {
   // Configure the client to use the local cluster.

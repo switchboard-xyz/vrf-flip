@@ -9,6 +9,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { hooks, Store, thunks } from '..';
 import * as api from '../../api';
+import { verifyPayerBalance } from '../../api';
 import { ThunkDispatch } from '../../types';
 import { Severity } from '../../util/const';
 import { GameState } from '../store/gameStateReducer';
@@ -194,6 +195,7 @@ class ApiState implements PrivateApiInterface {
         )
         .catch((e) => {
           console.error(e);
+          verifyPayerBalance(program.provider.connection, pubkey, 0.3 * LAMPORTS_PER_SOL).catch();
           if (e instanceof ApiError) throw e;
           else throw ApiError.userAccountMissing();
         });

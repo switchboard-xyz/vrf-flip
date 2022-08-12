@@ -7,7 +7,6 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
-  TransactionInstruction,
 } from "@solana/web3.js";
 import * as sbv2 from "@switchboard-xyz/switchboard-v2";
 import { PROGRAM_ID_CLI } from "./generated/programId";
@@ -121,10 +120,16 @@ export const tokenAmountToBig = (tokenAmount: anchor.BN, decimals = 9): Big => {
 export const verifyPayerBalance = async (
   connection: Connection,
   payer: PublicKey,
-  minAmount = 0.1 * LAMPORTS_PER_SOL
+  minAmount = 0.1 * LAMPORTS_PER_SOL,
+  currentBalance?: number
 ): Promise<void> => {
-  const payerBalance = await connection.getBalance(payer);
+  const payerBalance = currentBalance ?? (await connection.getBalance(payer));
   if (payerBalance > minAmount) {
+    console.log(
+      `Payer has sufficient funds, ${payerBalance / LAMPORTS_PER_SOL} > ${
+        minAmount / LAMPORTS_PER_SOL
+      }`
+    );
     return;
   }
 
@@ -134,5 +139,8 @@ export const verifyPayerBalance = async (
       1 * anchor.web3.LAMPORTS_PER_SOL
     );
     await connection.confirmTransaction(airdropTxn);
-  } catch {}
+  } catch (error) {
+    console.log(`Failed to request an airdrop`);
+    console.error(error);
+  }
 };
