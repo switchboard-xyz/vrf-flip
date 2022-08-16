@@ -11,7 +11,9 @@
   "scripts": {
     "client:gen": "./scripts/setup-program.js",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "postinstall": "cd app && yarn install",
+    "start": "cd app && yarn start"
   },
   "bin": {
     "sbv2-vrf-flip": "./cli.ts"
