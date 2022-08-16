@@ -1,22 +1,17 @@
 import * as anchor from "@project-serum/anchor";
-import * as anchor24 from "anchor-24-2";
 import * as spl from "@solana/spl-token-v2";
-import {
-  Cluster,
-  Connection,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-} from "@solana/web3.js";
 import * as sbv2 from "@switchboard-xyz/switchboard-v2";
+import * as anchor24 from "anchor-24-2";
+import Big from "big.js";
 import { PROGRAM_ID_CLI } from "./generated/programId";
 import { FlipProgram } from "./types";
 import { User } from "./user";
-import Big from "big.js";
 
 const DEFAULT_COMMITMENT = "confirmed";
 
-export const defaultRpcForCluster = (cluster: Cluster | "localnet") => {
+export const defaultRpcForCluster = (
+  cluster: anchor.web3.Cluster | "localnet"
+) => {
   switch (cluster) {
     case "mainnet-beta":
       return "https://ssc-dao.genesysgo.net";
@@ -39,10 +34,10 @@ export interface FlipUser {
 export async function getFlipProgram(
   rpcEndpoint: string
 ): Promise<FlipProgram> {
-  const programId = new PublicKey(PROGRAM_ID_CLI);
+  const programId = new anchor.web3.PublicKey(PROGRAM_ID_CLI);
   const provider = new anchor.AnchorProvider(
     new anchor.web3.Connection(rpcEndpoint, { commitment: DEFAULT_COMMITMENT }),
-    new sbv2.AnchorWallet(Keypair.generate()),
+    new sbv2.AnchorWallet(anchor.web3.Keypair.generate()),
     { commitment: DEFAULT_COMMITMENT }
   );
 
@@ -118,26 +113,29 @@ export const tokenAmountToBig = (tokenAmount: anchor.BN, decimals = 9): Big => {
 };
 
 export const verifyPayerBalance = async (
-  connection: Connection,
-  payer: PublicKey,
-  minAmount = 0.1 * LAMPORTS_PER_SOL,
+  connection: anchor.web3.Connection,
+  payer: anchor.web3.PublicKey,
+  minAmount = 0.1 * anchor.web3.LAMPORTS_PER_SOL,
   currentBalance?: number
 ): Promise<void> => {
+  if (connection.rpcEndpoint === defaultRpcForCluster("devnet")) {
+    connection = new anchor.web3.Connection(
+      anchor.web3.clusterApiUrl("devnet")
+    );
+  }
   const payerBalance = currentBalance ?? (await connection.getBalance(payer));
   if (payerBalance > minAmount) {
-    console.log(
-      `Payer has sufficient funds, ${payerBalance / LAMPORTS_PER_SOL} > ${
-        minAmount / LAMPORTS_PER_SOL
-      }`
+    return console.log(
+      `Payer has sufficient funds, ${
+        payerBalance / anchor.web3.LAMPORTS_PER_SOL
+      } > ${minAmount / anchor.web3.LAMPORTS_PER_SOL}`
     );
-    return;
   }
 
   try {
-    const airdropTxn = await connection.requestAirdrop(
-      payer,
-      1 * anchor.web3.LAMPORTS_PER_SOL
-    );
+    console.log(`Requesting airdrop for user ${payer.toBase58()}`);
+    const AIRDROP_AMT = 1 * anchor.web3.LAMPORTS_PER_SOL;
+    const airdropTxn = await connection.requestAirdrop(payer, AIRDROP_AMT);
     await connection.confirmTransaction(airdropTxn);
   } catch (error) {
     console.log(`Failed to request an airdrop`);

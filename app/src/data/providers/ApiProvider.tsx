@@ -9,7 +9,6 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { hooks, Store, thunks } from '..';
 import * as api from '../../api';
-import { verifyPayerBalance } from '../../api';
 import { ThunkDispatch } from '../../types';
 import { Severity } from '../../util/const';
 import { GameState } from '../store/gameStateReducer';
@@ -194,8 +193,6 @@ class ApiState implements PrivateApiInterface {
             })())
         )
         .catch((e) => {
-          console.error(e);
-          verifyPayerBalance(program.provider.connection, pubkey, 0.3 * LAMPORTS_PER_SOL).catch();
           if (e instanceof ApiError) throw e;
           else throw ApiError.userAccountMissing();
         });
@@ -242,13 +239,16 @@ class ApiState implements PrivateApiInterface {
     // If there are already known user accounts, do not set up new accounts.
     if (user) return this.log(`User account is already set up.`).then(() => this.playPrompt());
 
-    // If there are no known user accounts, begin accounts set up.
-    this.log(`Building user accounts...`);
-
     // Gather necessary programs.
     const program = await this.program;
     const anchorProvider = new anchor.AnchorProvider(program.provider.connection, this.wallet, {});
     const switchboard = await api.loadSwitchboard(anchorProvider);
+
+    this.log(`Checking if user needs airdrop...`);
+    api.verifyPayerBalance(program.provider.connection, anchorProvider.publicKey);
+
+    // If there are no known user accounts, begin accounts set up.
+    this.log(`Building user accounts...`);
 
     // Build out and sign transactions.
     const request = await api.User.createReq(program, switchboard, anchorProvider.publicKey);
