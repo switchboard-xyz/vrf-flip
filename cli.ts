@@ -33,7 +33,7 @@ import {
   UserBetSettled,
   UserState,
 } from "./client/index";
-import { IDL, SwitchboardVrfFlip } from "./target/types/switchboard_vrf_flip";
+import { IDL } from "./target/types/switchboard_vrf_flip";
 import { tokenAmountToBig } from "./client/utils";
 var Spinner = require("cli-spinner").Spinner;
 

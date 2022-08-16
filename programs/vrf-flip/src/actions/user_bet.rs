@@ -1,8 +1,5 @@
 use crate::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{sync_native, Mint, MintTo, SyncNative, Token, TokenAccount, Transfer},
-};
+use anchor_spl::token::{Token, TokenAccount, Transfer};
 use solana_program::native_token::LAMPORTS_PER_SOL;
 pub use switchboard_v2::{
     OracleQueueAccountData, PermissionAccountData, SbState, VrfAccountData, VrfRequestRandomness,
@@ -202,8 +199,14 @@ impl UserBet<'_> {
         if ctx.accounts.escrow.amount >= params.bet_amount {
             msg!("escrow already funded");
         } else {
-            let escrow_transfer_amount = params.bet_amount.checked_sub(ctx.accounts.escrow.amount).unwrap_or(params.bet_amount);
-            msg!("transferring {} flip tokens to escrow", escrow_transfer_amount);
+            let escrow_transfer_amount = params
+                .bet_amount
+                .checked_sub(ctx.accounts.escrow.amount)
+                .unwrap_or(params.bet_amount);
+            msg!(
+                "transferring {} flip tokens to escrow",
+                escrow_transfer_amount
+            );
             token::transfer(
                 CpiContext::new(
                     ctx.accounts.token_program.to_account_info().clone(),

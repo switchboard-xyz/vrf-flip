@@ -27,6 +27,8 @@ use bytemuck::{Pod, Zeroable};
 use num_derive::*;
 // use num_traits::*;
 
+use solana_security_txt::security_txt;
+
 declare_id!("FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC");
 
 const HOUSE_SEED: &[u8] = b"HOUSESTATESEED";
@@ -247,4 +249,18 @@ pub enum VrfFlipError {
     InsufficientFunds,
     #[msg("User can flip once every 10 seconds")]
     FlipRequestedTooSoon,
+}
+
+security_txt! {
+    name: "Switchboard VRF Flip",
+    project_url: "https://switchboard.xyz/",
+    contacts: "email:security@switchboard.xyz,link:https://docs.switchboard.xyz/security,discord:switchboardxyz,twitter:switchboardxyz,telegram:switchboardxyz",
+    policy: "https://docs.switchboard.xyz/security",
+    preferred_languages: "en",
+    source_code: "https://github.com/switchboard-xyz/vrf-flip",
+    auditors: "None",
+    acknowledgements: "
+This example program is not elgible for the Switchboard bug bounty program but we appreciate any contributions that lead to safer code for VRF integrators.
+ - Switchboard
+    "
 }

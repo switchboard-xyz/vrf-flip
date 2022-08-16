@@ -76,7 +76,6 @@ impl UserAirdrop<'_> {
 
     pub fn actuate(ctx: &Context<Self>, _params: &UserAirdropParams) -> anchor_lang::Result<()> {
         msg!("user_airdrop");
-        let clock = Clock::get()?;
 
         let house = ctx.accounts.house.load()?;
         let house_bump = house.bump.clone();
