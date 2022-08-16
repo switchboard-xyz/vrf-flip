@@ -239,13 +239,16 @@ class ApiState implements PrivateApiInterface {
     // If there are already known user accounts, do not set up new accounts.
     if (user) return this.log(`User account is already set up.`).then(() => this.playPrompt());
 
-    // If there are no known user accounts, begin accounts set up.
-    this.log(`Building user accounts...`);
-
     // Gather necessary programs.
     const program = await this.program;
     const anchorProvider = new anchor.AnchorProvider(program.provider.connection, this.wallet, {});
     const switchboard = await api.loadSwitchboard(anchorProvider);
+
+    this.log(`Checking if user needs airdrop...`);
+    api.verifyPayerBalance(program.provider.connection, anchorProvider.publicKey);
+
+    // If there are no known user accounts, begin accounts set up.
+    this.log(`Building user accounts...`);
 
     // Build out and sign transactions.
     const request = await api.User.createReq(program, switchboard, anchorProvider.publicKey);
