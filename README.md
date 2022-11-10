@@ -27,7 +27,7 @@ anchor build && anchor deploy
 Run the following command to create a localnet switchboard environment
 
 ```
-sbv2 localnet:env --keypair ../payer-keypair.json
+sbv2 solana localnet:env --keypair ../payer-keypair.json
 ```
 
 This command will output:
