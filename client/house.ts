@@ -94,7 +94,7 @@ export class House {
         return new House(program, req.account, houseState);
       }
       await sleep(1000);
-      retryCount--;
+      --retryCount;
     }
 
     throw new Error(`Failed to create new HouseAccount`);

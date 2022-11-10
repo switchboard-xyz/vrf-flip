@@ -24,8 +24,8 @@
     "@solana/spl-token": "^0.2.0",
     "@solana/spl-token-v2": "npm:@solana/spl-token@^0.2.0",
     "@solana/web3.js": "^1.48.0",
-    "@switchboard-xyz/sbv2-utils": "^0.1.40",
-    "@switchboard-xyz/switchboard-v2": "^0.0.127",
+    "@switchboard-xyz/sbv2-utils": "^0.1.51",
+    "@switchboard-xyz/switchboard-v2": "^0.0.151",
     "anchor-24-2": "npm:@project-serum/anchor@0.24.2",
     "big.js": "^6.2.1",
     "chalk": "4"

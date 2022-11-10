@@ -37,8 +37,8 @@ import { IDL } from "./target/types/switchboard_vrf_flip";
 import { tokenAmountToBig } from "./client/utils";
 var Spinner = require("cli-spinner").Spinner;
 
-const DEFAULT_MAINNET_RPC = "https://ssc-dao.genesysgo.net";
-const DEFAULT_DEVNET_RPC = "https://devnet.genesysgo.net";
+const DEFAULT_MAINNET_RPC = "https://api.mainnet-beta.solana.com";
+const DEFAULT_DEVNET_RPC = "https://api.devnet.solana.com";
 const DEFAULT_LOCALNET_RPC = "http://localhost:8899";
 
 const DEFAULT_COMMITMENT = "confirmed";
@@ -104,7 +104,7 @@ yargs(hideBin(process.argv))
           throw error;
         }
         const queueAccount = new OracleQueueAccount({
-          program: switchboardProgram,
+          program: switchboardProgram as any,
           publicKey: new PublicKey(queueKey),
         });
 
@@ -616,7 +616,7 @@ async function loadCli(
 
   return {
     flipProgram: flipProgram as any as FlipProgram,
-    switchboardProgram,
+    switchboardProgram: switchboardProgram as any,
     payer,
     provider,
   };

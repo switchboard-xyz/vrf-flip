@@ -247,7 +247,7 @@ export class User {
         return new User(program, req.account, userState);
       }
       await sleep(1000);
-      retryCount--;
+      --retryCount;
     }
 
     throw new Error(`Failed to create new UserAccount`);

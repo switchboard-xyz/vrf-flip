@@ -14,9 +14,9 @@ export const defaultRpcForCluster = (
 ) => {
   switch (cluster) {
     case "mainnet-beta":
-      return "https://ssc-dao.genesysgo.net";
+      return "https://api.mainnet-beta.solana.com";
     case "devnet":
-      return "https://devnet.genesysgo.net";
+      return "https://api.devnet.solana.com";
     case "localnet":
       return "http://localhost:8899";
     default:

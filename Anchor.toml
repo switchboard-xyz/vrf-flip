@@ -2,6 +2,8 @@
 seeds = false
 [programs.localnet]
 switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
+[programs.mainnet]
+switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
 
 [registry]
 url = "https://anchor.projectserum.com"
@@ -9,8 +11,8 @@ url = "https://anchor.projectserum.com"
 [provider]
 # cluster = "localnet"
 # wallet = "../payer-keypair.json"
-cluster = "devnet"
-wallet = "~/.config/solana/id.json"
+cluster = "mainnet"
+wallet = "./program-authority-keypair.json"
 
 [scripts]
 test = "npx mocha --extension ts --require ts-node/register -t 1000000 tests/**/*.test.ts"
