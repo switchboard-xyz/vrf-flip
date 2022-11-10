@@ -64,7 +64,7 @@ impl UserAirdrop<'_> {
         if user.last_airdrop_request_slot == 0 {
             return Ok(());
         }
-        if user.last_airdrop_request_slot > Clock::get()?.slot.checked_sub(5000).unwrap_or(0) {
+        if ctx.accounts.airdrop_token_wallet.amount > 0 && user.last_airdrop_request_slot > Clock::get()?.slot.checked_sub(5000).unwrap_or(0) {
             return Err(error!(VrfFlipError::AirdropRequestedTooSoon));
         }
         if ctx.accounts.airdrop_token_wallet.amount > AIRDROP_AMOUNT {

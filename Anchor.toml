@@ -11,7 +11,7 @@ url = "https://anchor.projectserum.com"
 [provider]
 # cluster = "localnet"
 # wallet = "../payer-keypair.json"
-cluster = "mainnet"
+cluster = "devnet"
 wallet = "./program-authority-keypair.json"
 
 [scripts]
