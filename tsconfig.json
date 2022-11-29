@@ -10,7 +10,8 @@
       "@solana/spl-token": ["./node_modules/@solana/spl-token"],
       "@switchboard-xyz/switchboard-v2": [
         "./node_modules/@switchboard-xyz/switchboard-v2"
-      ]
+      ],
+      "@project-serum/anchor": ["./node_modules/@project-serum/anchor"]
     }
   }
 }

@@ -1,31 +1,30 @@
 import * as anchor from "@project-serum/anchor";
 import * as spl from "@solana/spl-token-v2";
 import { Program } from "@project-serum/anchor";
-import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
+import { IDL, SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
 import { AnchorWallet } from "@switchboard-xyz/switchboard-v2";
 import { SwitchboardTestContext } from "@switchboard-xyz/sbv2-utils";
-import { GameTypeValue, House, User } from "../client";
+import { GameTypeValue, House, PROGRAM_ID, User } from "../client";
 import { createFlipUser, FlipUser } from "../client/utils";
 
 describe("switchboard-vrf-flip", () => {
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.env();
 
-  const program = anchor.workspace
-    .SwitchboardVrfFlip as Program<SwitchboardVrfFlip>;
+  anchor.setProvider(provider);
 
-  const connection = program.provider.connection;
+  // const program: Program<SwitchboardVrfFlip> =
+  //   anchor.workspace.SwitchboardVrfFlip;
 
-  const payer = (
-    (program.provider as anchor.AnchorProvider).wallet as AnchorWallet
-  ).payer;
+  const program: Program<SwitchboardVrfFlip> = new Program(
+    IDL,
+    PROGRAM_ID,
+    provider,
+    new anchor.BorshCoder(IDL)
+  );
 
   let switchboard: SwitchboardTestContext;
 
   let house: House;
-
-  let mint: spl.Mint;
-
-  // let payerTokenAccount: PublicKey;
 
   let flipUser: FlipUser;
 
@@ -33,7 +32,7 @@ describe("switchboard-vrf-flip", () => {
     // First, attempt to load the switchboard devnet PID
     try {
       switchboard = await SwitchboardTestContext.loadDevnetQueue(
-        program.provider as anchor.AnchorProvider,
+        provider,
         "F8ce7MsckeZAbAGmxjJNetxYXQa9mKr9nnrC3qKubyYy",
         5_000_000 // .005 wSOL
       );
@@ -45,7 +44,7 @@ describe("switchboard-vrf-flip", () => {
     }
     try {
       switchboard = await SwitchboardTestContext.loadFromEnv(
-        program.provider as anchor.AnchorProvider,
+        provider,
         undefined,
         5_000_000 // .005 wSOL
       );
@@ -62,19 +61,6 @@ describe("switchboard-vrf-flip", () => {
     house = await House.getOrCreate(program, switchboard.queue);
 
     console.log(house.toJSON());
-
-    mint = await house.loadMint();
-
-    // payerTokenAccount = (
-    //   await spl.getOrCreateAssociatedTokenAccount(
-    //     connection,
-    //     payer,
-    //     mint.address,
-    //     payer.publicKey
-    //   )
-    // ).address;
-
-    // console.log(`PayerTokenAccount ${payerTokenAccount}`);
   });
 
   it("initialize user 1", async () => {
