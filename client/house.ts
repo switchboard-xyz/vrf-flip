@@ -1,6 +1,5 @@
 import * as anchor from "@project-serum/anchor";
-import * as anchor24 from "anchor-24-2";
-import * as spl from "@solana/spl-token-v2";
+import * as spl from "@solana/spl-token";
 import {
   PublicKey,
   Signer,
@@ -64,7 +63,7 @@ export class House {
     };
   }
 
-  getQueueAccount(switchboardProgram: anchor24.Program): OracleQueueAccount {
+  getQueueAccount(switchboardProgram: anchor.Program): OracleQueueAccount {
     const queueAccount = new OracleQueueAccount({
       program: switchboardProgram as any,
       publicKey: this.state.switchboardQueue,

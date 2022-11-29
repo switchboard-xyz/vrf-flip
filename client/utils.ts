@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
-import * as spl from "@solana/spl-token-v2";
+import * as spl from "@solana/spl-token";
 import * as sbv2 from "@switchboard-xyz/switchboard-v2";
-import * as anchor24 from "anchor-24-2";
+
 import Big from "big.js";
 import { PROGRAM_ID_CLI } from "./generated/programId";
 import { FlipProgram } from "./types";
@@ -26,7 +26,7 @@ export const defaultRpcForCluster = (
 
 export interface FlipUser {
   keypair: anchor.web3.Keypair;
-  switchboardProgram: anchor24.Program;
+  switchboardProgram: anchor.Program;
   switchTokenWallet: anchor.web3.PublicKey;
   user: User;
 }
@@ -79,7 +79,7 @@ export async function createFlipUser(
     program.programId,
     provider
   );
-  const newSwitchboardProgram = new anchor24.Program(
+  const newSwitchboardProgram = new anchor.Program(
     switchboardProgram.idl,
     switchboardProgram.programId,
     provider
