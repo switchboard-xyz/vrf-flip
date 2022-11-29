@@ -4,8 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as anchor from "@project-serum/anchor";
-import * as anchor24 from "anchor-24-2";
-import * as spl from "@solana/spl-token-v2";
+import * as spl from "@solana/spl-token";
 import {
   Connection,
   Keypair,
@@ -14,7 +13,6 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import * as sbv2Utils from "@switchboard-xyz/sbv2-utils";
-import { transferWrappedSol } from "@switchboard-xyz/sbv2-utils";
 import * as sbv2 from "@switchboard-xyz/switchboard-v2";
 const yargs = require("yargs");
 const { hideBin } = require("yargs/helpers");
@@ -529,7 +527,7 @@ async function checkWrappedNativeBalance(
         wrappedNativeAddress.toBase58()
       )})`
     );
-    await transferWrappedSol(connection, payer, VRF_REQUEST_AMOUNT);
+    await sbv2Utils.transferWrappedSol(connection, payer, VRF_REQUEST_AMOUNT);
   }
   return tokenBalance;
 }
@@ -568,7 +566,7 @@ async function loadCli(
   keypair: Keypair
 ): Promise<{
   flipProgram: FlipProgram;
-  switchboardProgram: anchor24.Program;
+  switchboardProgram: anchor.Program;
   payer: anchor.web3.Keypair;
   provider: anchor.AnchorProvider;
 }> {

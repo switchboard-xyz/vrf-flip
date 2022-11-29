@@ -1,5 +1,4 @@
 import * as anchor from "@project-serum/anchor";
-import * as anchor24 from "anchor-24-2";
 import { PublicKey } from "@solana/web3.js";
 import {
   AnchorWallet,
@@ -12,7 +11,7 @@ import {
 
 export async function loadSwitchboard(
   provider: anchor.AnchorProvider
-): Promise<anchor24.Program> {
+): Promise<anchor.Program> {
   const switchboardProgram = await loadSwitchboardProgram(
     "devnet",
     provider.connection,
@@ -23,7 +22,7 @@ export async function loadSwitchboard(
 }
 
 export async function loadVrfContext(
-  program: anchor24.Program,
+  program: anchor.Program,
   vrfPubkey: PublicKey
 ): Promise<{
   accounts: {

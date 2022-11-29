@@ -1,6 +1,5 @@
 import * as anchor from "@project-serum/anchor";
-import * as anchor24 from "anchor-24-2";
-import * as spl from "@solana/spl-token-v2";
+import * as spl from "@solana/spl-token";
 import {
   Keypair,
   LAMPORTS_PER_SOL,
@@ -100,7 +99,7 @@ export class User {
   //   return User.create(program, houseKey);
   // }
 
-  getVrfAccount(switchboardProgram: anchor24.Program): VrfAccount {
+  getVrfAccount(switchboardProgram: anchor.Program): VrfAccount {
     const vrfAccount = new VrfAccount({
       program: switchboardProgram as any,
       publicKey: this.state.vrf,
@@ -109,7 +108,7 @@ export class User {
   }
 
   async getQueueAccount(
-    switchboardProgram: anchor24.Program
+    switchboardProgram: anchor.Program
   ): Promise<OracleQueueAccount> {
     const vrfAccount = this.getVrfAccount(switchboardProgram);
     const vrfState = await vrfAccount.loadData();
@@ -208,7 +207,7 @@ export class User {
 
   static async create(
     program: FlipProgram,
-    switchboardProgram: anchor24.Program
+    switchboardProgram: anchor.Program
   ): Promise<User> {
     const req = await User.createReq(program, switchboardProgram);
 
@@ -255,7 +254,7 @@ export class User {
 
   static async createReq(
     program: FlipProgram,
-    switchboardProgram: anchor24.Program,
+    switchboardProgram: anchor.Program,
     payerPubkey = programWallet(program as any).publicKey
   ): Promise<{
     ixns: TransactionInstruction[];

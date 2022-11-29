@@ -5,6 +5,9 @@
     "lib": ["es2019", "dom"],
     "module": "commonjs",
     "target": "ES2021",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "paths": {
+      "@solana/spl-token": ["./node_modules/@solana/spl-token"]
+    }
   }
 }
