@@ -1,6 +1,9 @@
 import * as anchor from "@project-serum/anchor";
 import * as spl from "@solana/spl-token";
-import * as sbv2 from "@switchboard-xyz/switchboard-v2";
+import {
+  OracleQueueAccount,
+  AnchorWallet,
+} from "@switchboard-xyz/switchboard-v2";
 
 import Big from "big.js";
 import { PROGRAM_ID_CLI } from "./generated/programId";
@@ -37,7 +40,7 @@ export async function getFlipProgram(
   const programId = new anchor.web3.PublicKey(PROGRAM_ID_CLI);
   const provider = new anchor.AnchorProvider(
     new anchor.web3.Connection(rpcEndpoint, { commitment: DEFAULT_COMMITMENT }),
-    new sbv2.AnchorWallet(anchor.web3.Keypair.generate()),
+    new AnchorWallet(anchor.web3.Keypair.generate()),
     { commitment: DEFAULT_COMMITMENT }
   );
 
@@ -57,7 +60,7 @@ export async function getFlipProgram(
 
 export async function createFlipUser(
   program: FlipProgram,
-  queueAccount: sbv2.OracleQueueAccount,
+  queueAccount: OracleQueueAccount,
   wSolAmount = 0.2
 ): Promise<FlipUser> {
   const switchboardProgram = queueAccount.program;
@@ -71,7 +74,7 @@ export async function createFlipUser(
 
   const provider = new anchor.AnchorProvider(
     switchboardProgram.provider.connection,
-    new sbv2.AnchorWallet(keypair),
+    new AnchorWallet(keypair),
     {}
   );
   const flipProgram = new anchor.Program(

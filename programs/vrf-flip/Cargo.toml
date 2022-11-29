@@ -20,7 +20,7 @@ default = []
 anchor-lang = "0.25.0"
 anchor-spl = "0.25.0"
 bytemuck = "1.7.2"
-switchboard-v2 = { version = "0.1.14", features = ["devnet"] }
+switchboard-v2 = { version = "0.1.16", features = ["devnet"] }
 # switchboard-v2 = { path = "../../../switchboard-v2/libraries/rs", features = ["devnet"]  }
 solana-program = "1.10.29"
 num-traits = "0.2"

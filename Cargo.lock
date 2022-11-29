@@ -1165,9 +1165,9 @@ checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
 
 [[package]]
 name = "solana-frozen-abi"
-version = "1.10.31"
+version = "1.10.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68f2b153f8eb8c4d22f2b739d3d31bac4122ca17376869cb717bf3a45200ea63"
+checksum = "d343b3838e95561548a2a651787d17aebf0a3f490f193746ee58f174f65bd7c3"
 dependencies = [
  "bs58 0.4.0",
  "bv",
@@ -1187,9 +1187,9 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi-macro"
-version = "1.10.31"
+version = "1.10.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cd23aad847403a28dd1452611490b5e8f040470ed251882cca0492c5e566280"
+checksum = "a37211ec8dff16b08fcb422807fa7f046bbc6417bc43e00a2f2effd8fafec6bc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1199,9 +1199,9 @@ dependencies = [
 
 [[package]]
 name = "solana-program"
-version = "1.10.31"
+version = "1.10.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37be82a1fe85b24aa036153650053fd9628489c07c834b6b2dc027c4052bdbe5"
+checksum = "f9622af117fe254208f1fe99a533ea523624d64745d6cffecd986da6753662ef"
 dependencies = [
  "base64 0.13.0",
  "bincode",
@@ -1241,9 +1241,9 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk-macro"
-version = "1.10.31"
+version = "1.10.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "275c52edaaaa86ce649a226c03f75579d570c01880a43ee1de77a973994754ce"
+checksum = "8d036e3a52e5570114ec9ab56a1d0a6659e1ebd1c948605318b4e35eafca4515"
 dependencies = [
  "bs58 0.4.0",
  "proc-macro2",
@@ -1271,11 +1271,12 @@ dependencies = [
 
 [[package]]
 name = "spl-token"
-version = "3.3.0"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cc67166ef99d10c18cb5e9c208901e6d8255c6513bb1f877977eba48e6cc4fb"
+checksum = "32d05653bed5932064a287340dbc8a3cb298ee717e5c7ec3353d7cdb9f8fb7e1"
 dependencies = [
  "arrayref",
+ "bytemuck",
  "num-derive",
  "num-traits",
  "num_enum",
@@ -1297,15 +1298,16 @@ checksum = "ab16ced94dbd8a46c82fd81e3ed9a8727dac2977ea869d217bcc4ea1f122e81f"
 
 [[package]]
 name = "switchboard-v2"
-version = "0.1.14"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34a7a5cb352c74f15596ed1d897eaa7644b4c709f991aca0f0f8d58a14e640c0"
+checksum = "3be74fbee74b06e26fdb20168157d8d96a680f2101051d191182d7a7d8e2382a"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bytemuck",
  "rust_decimal",
  "solana-program",
+ "spl-token",
  "superslice",
 ]
 

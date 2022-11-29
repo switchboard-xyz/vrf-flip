@@ -1,5 +1,4 @@
 import * as anchor from "@project-serum/anchor";
-import * as anchor24 from "anchor-24-2";
 import * as spl from "@solana/spl-token-v2";
 import { Program } from "@project-serum/anchor";
 import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
@@ -9,7 +8,6 @@ import { GameTypeValue, House, User } from "../client";
 import { createFlipUser, FlipUser } from "../client/utils";
 
 describe("switchboard-vrf-flip", () => {
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace
@@ -382,7 +380,7 @@ describe("switchboard-vrf-flip", () => {
       program.programId,
       provider
     );
-    const newSwitchboardProgram = new anchor24.Program(
+    const newSwitchboardProgram = new anchor.Program(
       switchboard.program.idl,
       switchboard.program.programId,
       provider

@@ -7,7 +7,10 @@
     "target": "ES2021",
     "esModuleInterop": true,
     "paths": {
-      "@solana/spl-token": ["./node_modules/@solana/spl-token"]
+      "@solana/spl-token": ["./node_modules/@solana/spl-token"],
+      "@switchboard-xyz/switchboard-v2": [
+        "./node_modules/@switchboard-xyz/switchboard-v2"
+      ]
     }
   }
 }
