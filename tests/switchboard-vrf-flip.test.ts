@@ -6,9 +6,12 @@ import { AnchorWallet } from "@switchboard-xyz/switchboard-v2";
 import { SwitchboardTestContext } from "@switchboard-xyz/sbv2-utils";
 import { GameTypeValue, House, PROGRAM_ID, User } from "../client";
 import { createFlipUser, FlipUser } from "../client/utils";
+import assert from "assert";
 
 describe("switchboard-vrf-flip", () => {
   const provider = anchor.AnchorProvider.env();
+
+  console.log(`rpcUrl: ${provider.connection.rpcEndpoint}`);
 
   anchor.setProvider(provider);
 
@@ -182,8 +185,8 @@ describe("switchboard-vrf-flip", () => {
   });
 
   it("fails to create duplicate user accounts", async () => {
-    try {
-      const newUser = await flipUser.user.program.methods
+    assert.rejects(async () => {
+      await flipUser.user.program.methods
         .userInit({
           switchboardStateBump: flipUser.user.state.switchboardStateBump,
           vrfPermissionBump: flipUser.user.state.vrfPermissionBump,
@@ -203,21 +206,7 @@ describe("switchboard-vrf-flip", () => {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .rpc();
-      throw new Error(`This should have thrown an error`);
-    } catch (error: any) {
-      // if (error instanceof anchor.AnchorError) {
-      // }
-      if (
-        !error
-          .toString()
-          .includes(
-            `Cross-program invocation with unauthorized signer or writable account`
-          ) &&
-        !error.toString().includes(`Signature verification failed`)
-      ) {
-        throw error;
-      }
-    }
+    }, new RegExp(/Cross-program invocation with unauthorized signer or writable account/g));
   });
 
   it("a new user fails to place back to back bets", async () => {
@@ -229,18 +218,15 @@ describe("switchboard-vrf-flip", () => {
       new anchor.BN(0),
       user2.switchTokenWallet
     );
-    try {
-      const bet2 = await user2.user.placeBet(
+
+    assert.rejects(async () => {
+      await user2.user.placeBet(
         GameTypeValue.COIN_FLIP,
         1,
         new anchor.BN(0),
         user2.switchTokenWallet
       );
-    } catch (error) {
-      if (!error.toString().includes("0x1775")) {
-        throw error;
-      }
-    }
+    }, new RegExp(/0x1775/g));
   });
 
   it("a new user rolls a 6 sided dice", async () => {
@@ -273,22 +259,15 @@ describe("switchboard-vrf-flip", () => {
   it("a new user fails to place a bet above the max", async () => {
     const user4 = await createFlipUser(program, switchboard.queue);
 
-    try {
-      const newUserState = await user4.user.placeBetAndAwaitFlip(
+    assert.rejects(async () => {
+      await user4.user.placeBetAndAwaitFlip(
         GameTypeValue.SIX_SIDED_DICE_ROLL,
         7,
         new anchor.BN(0),
         user4.switchTokenWallet,
         45
       );
-    } catch (error) {
-      if (
-        !error.toString().includes("0x1777") &&
-        !error.toString().includes("InvalidBet")
-      ) {
-        throw error;
-      }
-    }
+    }, new RegExp(/0x1777/g));
   });
 
   it("a new user rolls a 20 sided dice", async () => {
