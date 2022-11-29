@@ -251,6 +251,7 @@ pub enum VrfFlipError {
     FlipRequestedTooSoon,
 }
 
+#[cfg(not(feature = "no-entrypoint"))]
 security_txt! {
     name: "Switchboard VRF Flip",
     project_url: "https://switchboard.xyz/",
