@@ -13,16 +13,16 @@ no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
-default = []
-
+default = ["devnet"]
+devnet = ["switchboard-v2/devnet"]
 
 [dependencies]
-anchor-lang = "0.25.0"
-anchor-spl = "0.25.0"
+anchor-lang = "^0.26.0"
+anchor-spl = "^0.26.0"
 bytemuck = "1.7.2"
-switchboard-v2 = { version = "0.1.16", features = ["devnet"] }
-# switchboard-v2 = { path = "../../../switchboard-v2/libraries/rs", features = ["devnet"]  }
-solana-program = "1.10.29"
+switchboard-v2 = { version = "^0.1.20" }
+# switchboard-v2 = { path = "../../../sbv2-solana/rust/switchboard-v2"  }
+solana-program = "^1.14.11"
 num-traits = "0.2"
 num-derive = "0.3"
 solana-security-txt = "1.0.1"

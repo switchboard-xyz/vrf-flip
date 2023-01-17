@@ -4,7 +4,7 @@ export * from "./generated/instructions";
 export * from "./generated/programId";
 export * from "./generated/types";
 export * from "./house";
-export * from "./switchboard";
 export * from "./types";
 export * from "./user";
 export * from "./utils";
+export * from "./program";

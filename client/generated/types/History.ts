@@ -1,29 +1,29 @@
-import { PublicKey } from "@solana/web3.js" // eslint-disable-line @typescript-eslint/no-unused-vars
-import BN from "bn.js" // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as types from "../types" // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as borsh from "@project-serum/borsh"
+import { PublicKey } from "@solana/web3.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import BN from "bn.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as types from "../types"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as borsh from "@project-serum/borsh";
 
 export interface HistoryFields {
-  idx: number
-  max: number
-  rounds: Array<types.RoundFields>
+  idx: number;
+  max: number;
+  rounds: Array<types.RoundFields>;
 }
 
 export interface HistoryJSON {
-  idx: number
-  max: number
-  rounds: Array<types.RoundJSON>
+  idx: number;
+  max: number;
+  rounds: Array<types.RoundJSON>;
 }
 
 export class History {
-  readonly idx: number
-  readonly max: number
-  readonly rounds: Array<types.Round>
+  readonly idx: number;
+  readonly max: number;
+  readonly rounds: Array<types.Round>;
 
   constructor(fields: HistoryFields) {
-    this.idx = fields.idx
-    this.max = fields.max
-    this.rounds = fields.rounds.map((item) => new types.Round({ ...item }))
+    this.idx = fields.idx;
+    this.max = fields.max;
+    this.rounds = fields.rounds.map((item) => new types.Round({ ...item }));
   }
 
   static layout(property?: string) {
@@ -34,7 +34,7 @@ export class History {
         borsh.array(types.Round.layout(), 48, "rounds"),
       ],
       property
-    )
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,7 +47,7 @@ export class History {
           item: any /* eslint-disable-line @typescript-eslint/no-explicit-any */
         ) => types.Round.fromDecoded(item)
       ),
-    })
+    });
   }
 
   static toEncodable(fields: HistoryFields) {
@@ -55,7 +55,7 @@ export class History {
       idx: fields.idx,
       max: fields.max,
       rounds: fields.rounds.map((item) => types.Round.toEncodable(item)),
-    }
+    };
   }
 
   toJSON(): HistoryJSON {
@@ -63,7 +63,7 @@ export class History {
       idx: this.idx,
       max: this.max,
       rounds: this.rounds.map((item) => item.toJSON()),
-    }
+    };
   }
 
   static fromJSON(obj: HistoryJSON): History {
@@ -71,10 +71,10 @@ export class History {
       idx: obj.idx,
       max: obj.max,
       rounds: obj.rounds.map((item) => types.Round.fromJSON(item)),
-    })
+    });
   }
 
   toEncodable() {
-    return History.toEncodable(this)
+    return History.toEncodable(this);
   }
 }

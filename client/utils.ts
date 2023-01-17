@@ -1,16 +1,22 @@
 import * as anchor from "@project-serum/anchor";
-import * as spl from "@solana/spl-token";
+import { createWrappedNativeAccount } from "@solana/spl-token";
+import { Keypair } from "@solana/web3.js";
 import {
-  OracleQueueAccount,
   AnchorWallet,
-} from "@switchboard-xyz/switchboard-v2";
-
+  QueueAccount,
+  SwitchboardProgram,
+} from "@switchboard-xyz/solana.js";
 import Big from "big.js";
 import { PROGRAM_ID_CLI } from "./generated/programId";
-import { FlipProgram } from "./types";
+import { FlipProgram } from "./program";
 import { User } from "./user";
 
 const DEFAULT_COMMITMENT = "confirmed";
+
+export function programWallet(program: anchor.Program): Keypair {
+  return ((program.provider as anchor.AnchorProvider).wallet as AnchorWallet)
+    .payer;
+}
 
 export const defaultRpcForCluster = (
   cluster: anchor.web3.Cluster | "localnet"
@@ -29,14 +35,14 @@ export const defaultRpcForCluster = (
 
 export interface FlipUser {
   keypair: anchor.web3.Keypair;
-  switchboardProgram: anchor.Program;
+  switchboardProgram: SwitchboardProgram;
   switchTokenWallet: anchor.web3.PublicKey;
   user: User;
 }
 
 export async function getFlipProgram(
   rpcEndpoint: string
-): Promise<FlipProgram> {
+): Promise<anchor.Program> {
   const programId = new anchor.web3.PublicKey(PROGRAM_ID_CLI);
   const provider = new anchor.AnchorProvider(
     new anchor.web3.Connection(rpcEndpoint, { commitment: DEFAULT_COMMITMENT }),
@@ -60,10 +66,9 @@ export async function getFlipProgram(
 
 export async function createFlipUser(
   program: FlipProgram,
-  queueAccount: OracleQueueAccount,
   wSolAmount = 0.2
 ): Promise<FlipUser> {
-  const switchboardProgram = queueAccount.program;
+  const switchboardProgram = program.switchboard;
 
   const keypair = anchor.web3.Keypair.generate();
   const airdropTxn = await program.provider.connection.requestAirdrop(
@@ -77,24 +82,31 @@ export async function createFlipUser(
     new AnchorWallet(keypair),
     {}
   );
-  const flipProgram = new anchor.Program(
+  const flipAnchorProgram = new anchor.Program(
     program.idl,
     program.programId,
     provider
   );
-  const newSwitchboardProgram = new anchor.Program(
-    switchboardProgram.idl,
-    switchboardProgram.programId,
-    provider
+
+  const newSwitchboardProgram = await SwitchboardProgram.fromProvider(
+    flipAnchorProgram.provider as anchor.AnchorProvider
   );
-  const switchTokenWallet = await spl.createWrappedNativeAccount(
+
+  const switchTokenWallet = await createWrappedNativeAccount(
     newSwitchboardProgram.provider.connection,
     keypair,
     keypair.publicKey,
     wSolAmount * anchor.web3.LAMPORTS_PER_SOL
   );
 
-  const user = await User.create(flipProgram, newSwitchboardProgram);
+  const flipProgram = new FlipProgram(
+    flipAnchorProgram,
+    program.house,
+    program.mint,
+    new QueueAccount(newSwitchboardProgram, program.queue.publicKey)
+  );
+
+  const user = await User.create(flipProgram);
 
   return {
     keypair,
