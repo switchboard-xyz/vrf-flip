@@ -55,6 +55,7 @@ describe("switchboard-vrf-flip", () => {
   let flipUser: FlipUser;
 
   before(async () => {
+    console.log(`programId: ${anchorProgram.programId}`);
     switchboard = await Switchboard.load(provider);
     console.log(`queue: ${switchboard.queue.publicKey}`);
     console.log(`oracle: ${switchboard.oracle.publicKey}`);
@@ -77,8 +78,6 @@ describe("switchboard-vrf-flip", () => {
     console.log(house.toJSON());
 
     program = await FlipProgram.load(anchorProgram);
-
-    console.log(`MINT: ${(await house.loadMint()).address}`);
   });
 
   it("initialize user 1", async () => {

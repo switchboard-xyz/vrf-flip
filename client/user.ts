@@ -181,23 +181,14 @@ export class User {
 
   static async create(program: FlipProgram): Promise<User> {
     const [userInitTxns, userKey] = await User.createReq(program);
-    console.log(`userInitTxn length: ${userInitTxns.length}`);
-    console.log(`userKey: ${userKey}`);
-    const signatures = await TransactionObject.signAndSendAll(
-      program.provider,
+    const signatures = await program.signAndSendAll(
       userInitTxns,
-      { skipPreflight: true },
+      {
+        skipPreflight: true,
+      },
       undefined,
-      1000
+      50
     );
-    // const signatures = await program.signAndSendAll(
-    //   userInitTxns,
-    //   {
-    //     skipPreflight: true,
-    //   },
-    //   undefined,
-    //   50
-    // );
 
     let retryCount = 5;
     while (retryCount) {
@@ -219,13 +210,13 @@ export class User {
     program: FlipProgram,
     payerPubkey = program.payerPubkey
   ): Promise<[Array<TransactionObject>, PublicKey]> {
-    try {
-      await verifyPayerBalance(
-        program.provider.connection,
-        payerPubkey,
-        0.3 * LAMPORTS_PER_SOL
-      );
-    } catch {}
+    // try {
+    //   await verifyPayerBalance(
+    //     program.provider.connection,
+    //     payerPubkey,
+    //     0.3 * LAMPORTS_PER_SOL
+    //   );
+    // } catch {}
 
     const queue = await program.queue.loadData();
 
@@ -233,6 +224,7 @@ export class User {
     const vrfSecret = anchor.web3.Keypair.generate();
 
     const [userKey, userBump] = User.fromSeeds(program, payerPubkey);
+
     const rewardAddress = program.mint.getAssociatedAddress(payerPubkey);
 
     const callback = await User.getCallback(
