@@ -10,18 +10,13 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-  AnchorWallet,
-  QueueAccount,
-  SwitchboardProgram,
-} from "@switchboard-xyz/solana.js";
+import { AnchorWallet, SwitchboardProgram } from "@switchboard-xyz/solana.js";
 import {
   Keypair,
   LAMPORTS_PER_SOL,
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
-import { DockerOracle } from "@switchboard-xyz/common";
 import { Switchboard } from "./switchboard";
 
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
@@ -32,35 +27,6 @@ export const MINT_KEYPAIR = Keypair.fromSecretKey(
     160, 186, 32, 184, 217, 41, 28, 96, 61, 36, 135, 186, 27, 34, 96,
   ])
 );
-
-async function getOrCreateKeypair(
-  provider: anchor.AnchorProvider,
-  keypairPath: string
-): Promise<Keypair> {
-  if (!fs.existsSync(keypairPath)) {
-    const keypair = Keypair.generate();
-    fs.writeFileSync(keypairPath, `[${new Uint8Array(keypair.secretKey)}]`);
-  }
-
-  const keypair = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync(keypairPath, "utf-8")))
-  );
-
-  const balance = await provider.connection.getBalance(keypair.publicKey);
-  if (balance < 2) {
-    await provider.sendAndConfirm(
-      new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: provider.wallet.publicKey,
-          toPubkey: keypair.publicKey,
-          lamports: 2 * LAMPORTS_PER_SOL,
-        })
-      )
-    );
-  }
-
-  return keypair;
-}
 
 describe("switchboard-vrf-flip", () => {
   const provider = anchor.AnchorProvider.local();
@@ -83,12 +49,6 @@ describe("switchboard-vrf-flip", () => {
 
   let switchboard: Switchboard;
 
-  // let switchboard: SwitchboardProgram;
-  // let queueAccount: QueueAccount;
-  // let dockerOracle: DockerOracle;
-
-  // let switchboard: Switchboard;
-
   let house: House;
 
   let flipUser: FlipUser;
@@ -98,73 +58,6 @@ describe("switchboard-vrf-flip", () => {
     console.log(`queue: ${switchboard.queue.publicKey}`);
     console.log(`oracle: ${switchboard.oracle.publicKey}`);
     await switchboard.start();
-
-    // switchboard = await SwitchboardProgram.fromProvider(provider);
-
-    // [queueAccount] = await QueueAccount.create(switchboard, {
-    //   name: "My Queue",
-    //   metadata: "Queue Metadata",
-    //   queueSize: 10,
-    //   reward: 0,
-    //   minStake: 0,
-    //   oracleTimeout: 900,
-    //   unpermissionedVrf: true,
-    // });
-    // console.log(`queue: ${queueAccount.publicKey}`);
-
-    // const oracleAuthorityKeypairPath = path.join(
-    //   process.cwd(),
-    //   ".switchboard",
-    //   "oracle-authority-keypair.json"
-    // );
-    // const oracleAuthorityKeypair = await getOrCreateKeypair(
-    //   provider,
-    //   oracleAuthorityKeypairPath
-    // );
-
-    // const [oracleAccount] = await queueAccount.createOracle({
-    //   name: "Oracle #1",
-    //   stakeAmount: 0,
-    //   enable: true,
-    //   authority: oracleAuthorityKeypair,
-    // });
-    // console.log(`oracle: ${oracleAccount.publicKey}`);
-
-    // dockerOracle = new DockerOracle(
-    //   {
-    //     chain: "solana",
-    //     network: "localnet",
-    //     rpcUrl: provider.connection.rpcEndpoint.includes("localhost")
-    //       ? provider.connection.rpcEndpoint.replace(
-    //           "localhost",
-    //           "host.docker.internal"
-    //         )
-    //       : provider.connection.rpcEndpoint.includes("0.0.0.0")
-    //       ? provider.connection.rpcEndpoint.replace(
-    //           "0.0.0.0",
-    //           "host.docker.internal"
-    //         )
-    //       : provider.connection.rpcEndpoint,
-    //     oracleKey: oracleAccount.publicKey.toBase58(),
-    //     secretPath: oracleAuthorityKeypairPath,
-    //     envVariables: {
-    //       VERBOSE: "1",
-    //       DEBUG: "1",
-    //     },
-    //   },
-    //   "dev-v2-RC_01_17_23_16_22b-beta",
-    //   undefined,
-    //   true
-    // );
-
-    // console.log(`Starting Switchboard oracle ...`);
-
-    // await dockerOracle.startAndAwait();
-
-    // switchboard = await Switchboard.load(provider);
-    // if (!switchboard) {
-    //   throw new Error(`Failed to load Switchboard`);
-    // }
   });
 
   after(async () => {
