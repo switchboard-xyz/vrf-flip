@@ -34,8 +34,8 @@ pub struct UserAirdrop<'info> {
     #[account(
         mut,
         mint::decimals = 9,
-        mint::authority = house,
-        mint::freeze_authority = house,
+        // mint::authority = house,
+        // mint::freeze_authority = house,
     )]
     pub mint: Account<'info, Mint>,
     /// CHECK:
@@ -64,7 +64,9 @@ impl UserAirdrop<'_> {
         if user.last_airdrop_request_slot == 0 {
             return Ok(());
         }
-        if ctx.accounts.airdrop_token_wallet.amount > 0 && user.last_airdrop_request_slot > Clock::get()?.slot.checked_sub(5000).unwrap_or(0) {
+        if ctx.accounts.airdrop_token_wallet.amount > 0
+            && user.last_airdrop_request_slot > Clock::get()?.slot.checked_sub(5000).unwrap_or(0)
+        {
             return Err(error!(VrfFlipError::AirdropRequestedTooSoon));
         }
         if ctx.accounts.airdrop_token_wallet.amount > AIRDROP_AMOUNT {
@@ -89,6 +91,12 @@ impl UserAirdrop<'_> {
             airdrop_amount = INITIAL_AIRDROP_AMOUNT;
         }
         drop(user);
+
+        if ctx.accounts.mint.mint_authority.is_none()
+            || ctx.accounts.mint.mint_authority.unwrap() != ctx.accounts.house.key()
+        {
+            return Err(error!(VrfFlipError::UnauthorizedMint));
+        }
 
         msg!("minting 1 tokens to users token wallet");
         token::mint_to(

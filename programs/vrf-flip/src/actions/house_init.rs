@@ -22,13 +22,13 @@ pub struct HouseInit<'info> {
     pub switchboard_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
-        // constraint = 
-        //     switchboard_queue.load()?.unpermissioned_vrf_enabled == true @ VrfFlipError::OracleQueueRequiresPermissions
+        constraint = 
+            switchboard_queue.load()?.unpermissioned_vrf_enabled == true @ VrfFlipError::OracleQueueRequiresPermissions
     )]
     pub switchboard_queue: AccountLoader<'info, OracleQueueAccountData>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = payer,
         mint::decimals = 9,
         mint::authority = house,
@@ -36,7 +36,7 @@ pub struct HouseInit<'info> {
     )]
     pub mint: Account<'info, Mint>,
     #[account(
-        init,
+        init_if_needed,
         payer = payer,
         associated_token::mint = mint,
         associated_token::authority = house,
@@ -71,30 +71,34 @@ impl HouseInit<'_> {
         msg!("house_init");
 
         let house_bump = ctx.bumps.get("house").unwrap().clone();
-        let house_seeds: &[&[&[u8]]] = &[&[&HOUSE_SEED, &[house_bump]]];
 
-        msg!("minting 100_000_000 tokens to house vault");
-        token::mint_to(
-            CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info().clone(),
-                MintTo {
-                    mint: ctx.accounts.mint.to_account_info().clone(),
-                    authority: ctx.accounts.house.to_account_info().clone(),
-                    to: ctx.accounts.house_vault.to_account_info().clone(),
-                },
-                house_seeds,
-            ),
-            100_000_000_000_000_000,
-        )?;
+        if ctx.accounts.mint.mint_authority.is_some()
+            && ctx.accounts.mint.mint_authority.unwrap() == ctx.accounts.house.key()
+        {
+            let house_seeds: &[&[&[u8]]] = &[&[&HOUSE_SEED, &[house_bump]]];
+            msg!("minting 100_000_000 tokens to house vault");
+            token::mint_to(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info().clone(),
+                    MintTo {
+                        mint: ctx.accounts.mint.to_account_info().clone(),
+                        authority: ctx.accounts.house.to_account_info().clone(),
+                        to: ctx.accounts.house_vault.to_account_info().clone(),
+                    },
+                    house_seeds,
+                ),
+                100_000_000_000_000_000,
+            )?;
+        }
 
         let house = &mut ctx.accounts.house.load_init()?;
-
         house.bump = house_bump;
         house.authority = ctx.accounts.authority.key().clone();
         house.switchboard_mint = ctx.accounts.switchboard_mint.key().clone();
         house.mint = ctx.accounts.mint.key().clone();
         house.switchboard_queue = ctx.accounts.switchboard_queue.key().clone();
         house.house_vault = ctx.accounts.house_vault.key().clone();
+        drop(house);
 
         Ok(())
     }

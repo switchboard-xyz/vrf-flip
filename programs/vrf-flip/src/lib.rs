@@ -249,6 +249,8 @@ pub enum VrfFlipError {
     InsufficientFunds,
     #[msg("User can flip once every 10 seconds")]
     FlipRequestedTooSoon,
+    #[msg("House has no authority to mint more tokens")]
+    UnauthorizedMint,
 }
 
 #[cfg(not(feature = "no-entrypoint"))]

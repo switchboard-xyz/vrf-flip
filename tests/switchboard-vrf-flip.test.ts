@@ -19,6 +19,7 @@ import {
 } from "@solana/web3.js";
 import { Switchboard } from "./switchboard";
 
+// CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
   new Uint8Array([
     36, 23, 151, 78, 88, 73, 152, 187, 219, 152, 30, 131, 123, 141, 255, 131,
@@ -76,6 +77,8 @@ describe("switchboard-vrf-flip", () => {
     console.log(house.toJSON());
 
     program = await FlipProgram.load(anchorProgram);
+
+    console.log(`MINT: ${(await house.loadMint()).address}`);
   });
 
   it("initialize user 1", async () => {

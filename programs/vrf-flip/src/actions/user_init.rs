@@ -26,12 +26,7 @@ pub struct UserInit<'info> {
         has_one = mint
     )]
     pub house: AccountLoader<'info, HouseState>,
-    #[account(
-        mut,
-        mint::decimals = 9,
-        mint::authority = house,
-        mint::freeze_authority = house,
-    )]
+    #[account(mint::decimals = 9)]
     pub mint: Account<'info, Mint>,
     /// CHECK:
     #[account(mut, signer)]
@@ -51,10 +46,11 @@ pub struct UserInit<'info> {
     )]
     pub reward_address: Account<'info, TokenAccount>,
     /// CHECK:
-    #[account(mut,
-        // constraint = 
-        //     vrf.load()?.authority == user.key() &&
-        //     vrf.load()?.oracle_queue == house.load()?.switchboard_queue @ VrfFlipError::OracleQueueMismatch
+    #[account(
+        mut,
+        constraint = 
+            vrf.load()?.authority == user.key() &&
+            vrf.load()?.oracle_queue == house.load()?.switchboard_queue @ VrfFlipError::OracleQueueMismatch
     )]
     pub vrf: AccountLoader<'info, VrfAccountData>,
     /// CHECK:
