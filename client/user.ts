@@ -50,7 +50,7 @@ export interface UserJSON extends UserStateJSON {
   publicKey: string;
 }
 
-const VRF_REQUEST_AMOUNT = new anchor.BN(2_000_000);
+const VRF_REQUEST_AMOUNT = new anchor.BN(0.002 * LAMPORTS_PER_SOL);
 
 export class User {
   state: UserState;
@@ -181,14 +181,23 @@ export class User {
 
   static async create(program: FlipProgram): Promise<User> {
     const [userInitTxns, userKey] = await User.createReq(program);
-    const signatures = await program.signAndSendAll(
+    console.log(`userInitTxn length: ${userInitTxns.length}`);
+    console.log(`userKey: ${userKey}`);
+    const signatures = await TransactionObject.signAndSendAll(
+      program.provider,
       userInitTxns,
-      {
-        skipPreflight: true,
-      },
+      { skipPreflight: true },
       undefined,
-      50
+      1000
     );
+    // const signatures = await program.signAndSendAll(
+    //   userInitTxns,
+    //   {
+    //     skipPreflight: true,
+    //   },
+    //   undefined,
+    //   50
+    // );
 
     let retryCount = 5;
     while (retryCount) {
@@ -225,7 +234,6 @@ export class User {
 
     const [userKey, userBump] = User.fromSeeds(program, payerPubkey);
     const rewardAddress = program.mint.getAssociatedAddress(payerPubkey);
-    console.log(`reward: ${rewardAddress}`);
 
     const callback = await User.getCallback(
       program,

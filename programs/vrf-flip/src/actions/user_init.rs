@@ -52,10 +52,9 @@ pub struct UserInit<'info> {
     pub reward_address: Account<'info, TokenAccount>,
     /// CHECK:
     #[account(mut,
-        owner = SWITCHBOARD_PROGRAM_ID @ VrfFlipError::InvalidSwitchboardAccount,
-        constraint = 
-            vrf.load()?.authority == user.key() &&
-            vrf.load()?.oracle_queue == house.load()?.switchboard_queue @ VrfFlipError::OracleQueueMismatch
+        // constraint = 
+        //     vrf.load()?.authority == user.key() &&
+        //     vrf.load()?.oracle_queue == house.load()?.switchboard_queue @ VrfFlipError::OracleQueueMismatch
     )]
     pub vrf: AccountLoader<'info, VrfAccountData>,
     /// CHECK:

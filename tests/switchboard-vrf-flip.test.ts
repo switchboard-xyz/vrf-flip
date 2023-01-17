@@ -22,6 +22,7 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { DockerOracle } from "@switchboard-xyz/common";
+import { Switchboard } from "./switchboard";
 
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
   new Uint8Array([
@@ -80,9 +81,11 @@ describe("switchboard-vrf-flip", () => {
 
   let program: FlipProgram;
 
-  let switchboard: SwitchboardProgram;
-  let queueAccount: QueueAccount;
-  let dockerOracle: DockerOracle;
+  let switchboard: Switchboard;
+
+  // let switchboard: SwitchboardProgram;
+  // let queueAccount: QueueAccount;
+  // let dockerOracle: DockerOracle;
 
   // let switchboard: Switchboard;
 
@@ -91,65 +94,72 @@ describe("switchboard-vrf-flip", () => {
   let flipUser: FlipUser;
 
   before(async () => {
-    switchboard = await SwitchboardProgram.fromProvider(provider);
+    switchboard = await Switchboard.load(provider);
+    console.log(`queue: ${switchboard.queue.publicKey}`);
+    console.log(`oracle: ${switchboard.oracle.publicKey}`);
+    await switchboard.start();
 
-    [queueAccount] = await QueueAccount.create(switchboard, {
-      name: "My Queue",
-      metadata: "Queue Metadata",
-      queueSize: 10,
-      reward: 0,
-      minStake: 0,
-      oracleTimeout: 900,
-      unpermissionedFeeds: true,
-      unpermissionedVrf: true,
-      enableBufferRelayers: false,
-    });
-    console.log(`queue: ${queueAccount.publicKey}`);
+    // switchboard = await SwitchboardProgram.fromProvider(provider);
 
-    const oracleAuthorityKeypairPath = path.join(
-      process.cwd(),
-      ".switchboard",
-      "oracle-authority-keypair.json"
-    );
-    const oracleAuthorityKeypair = await getOrCreateKeypair(
-      provider,
-      oracleAuthorityKeypairPath
-    );
+    // [queueAccount] = await QueueAccount.create(switchboard, {
+    //   name: "My Queue",
+    //   metadata: "Queue Metadata",
+    //   queueSize: 10,
+    //   reward: 0,
+    //   minStake: 0,
+    //   oracleTimeout: 900,
+    //   unpermissionedVrf: true,
+    // });
+    // console.log(`queue: ${queueAccount.publicKey}`);
 
-    const [oracleAccount] = await queueAccount.createOracle({
-      name: "Oracle #1",
-      stakeAmount: 0,
-      enable: true,
-      authority: oracleAuthorityKeypair,
-    });
-    console.log(`oracle: ${oracleAccount.publicKey}`);
+    // const oracleAuthorityKeypairPath = path.join(
+    //   process.cwd(),
+    //   ".switchboard",
+    //   "oracle-authority-keypair.json"
+    // );
+    // const oracleAuthorityKeypair = await getOrCreateKeypair(
+    //   provider,
+    //   oracleAuthorityKeypairPath
+    // );
 
-    dockerOracle = new DockerOracle(
-      {
-        chain: "solana",
-        network: "localnet",
-        rpcUrl: provider.connection.rpcEndpoint.includes("localhost")
-          ? provider.connection.rpcEndpoint.replace(
-              "localhost",
-              "host.docker.internal"
-            )
-          : provider.connection.rpcEndpoint.includes("0.0.0.0")
-          ? provider.connection.rpcEndpoint.replace(
-              "0.0.0.0",
-              "host.docker.internal"
-            )
-          : provider.connection.rpcEndpoint,
-        oracleKey: oracleAccount.publicKey.toBase58(),
-        secretPath: oracleAuthorityKeypairPath,
-      },
-      "dev-v2-RC_01_17_23_16_22b-beta",
-      undefined,
-      true
-    );
+    // const [oracleAccount] = await queueAccount.createOracle({
+    //   name: "Oracle #1",
+    //   stakeAmount: 0,
+    //   enable: true,
+    //   authority: oracleAuthorityKeypair,
+    // });
+    // console.log(`oracle: ${oracleAccount.publicKey}`);
 
-    console.log(`Starting Switchboard oracle ...`);
+    // dockerOracle = new DockerOracle(
+    //   {
+    //     chain: "solana",
+    //     network: "localnet",
+    //     rpcUrl: provider.connection.rpcEndpoint.includes("localhost")
+    //       ? provider.connection.rpcEndpoint.replace(
+    //           "localhost",
+    //           "host.docker.internal"
+    //         )
+    //       : provider.connection.rpcEndpoint.includes("0.0.0.0")
+    //       ? provider.connection.rpcEndpoint.replace(
+    //           "0.0.0.0",
+    //           "host.docker.internal"
+    //         )
+    //       : provider.connection.rpcEndpoint,
+    //     oracleKey: oracleAccount.publicKey.toBase58(),
+    //     secretPath: oracleAuthorityKeypairPath,
+    //     envVariables: {
+    //       VERBOSE: "1",
+    //       DEBUG: "1",
+    //     },
+    //   },
+    //   "dev-v2-RC_01_17_23_16_22b-beta",
+    //   undefined,
+    //   true
+    // );
 
-    await dockerOracle.startAndAwait();
+    // console.log(`Starting Switchboard oracle ...`);
+
+    // await dockerOracle.startAndAwait();
 
     // switchboard = await Switchboard.load(provider);
     // if (!switchboard) {
@@ -158,18 +168,17 @@ describe("switchboard-vrf-flip", () => {
   });
 
   after(async () => {
-    if (dockerOracle) {
-      const stopped = dockerOracle.stop();
-      if (!stopped) {
-        console.error(`Failed to stop docker oracle`);
-
-        // TODO: We can force kill it
-      }
+    if (switchboard) {
+      switchboard.stop();
     }
   });
 
   it("initialize the house", async () => {
-    house = await House.getOrCreate(anchorProgram, queueAccount, MINT_KEYPAIR);
+    house = await House.getOrCreate(
+      anchorProgram,
+      switchboard.queue,
+      MINT_KEYPAIR
+    );
 
     console.log(house.toJSON());
 

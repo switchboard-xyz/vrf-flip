@@ -88,8 +88,15 @@ export async function createFlipUser(
     provider
   );
 
-  const newSwitchboardProgram = await SwitchboardProgram.fromProvider(
-    flipAnchorProgram.provider as anchor.AnchorProvider
+  // const newSwitchboardProgram = await SwitchboardProgram.fromProvider(provider);
+  const newSwitchboardProgram = new SwitchboardProgram(
+    new anchor.Program(
+      program.switchboard.idl,
+      program.switchboard.programId,
+      provider
+    ),
+    program.switchboard.cluster,
+    program.switchboard.mint
   );
 
   const switchTokenWallet = await createWrappedNativeAccount(

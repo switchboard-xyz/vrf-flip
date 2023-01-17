@@ -18,12 +18,12 @@ pub struct HouseInit<'info> {
     /// CHECK:
     #[account(mut, signer)]
     pub authority: AccountInfo<'info>,
-    
+
     pub switchboard_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
-        constraint = 
-            switchboard_queue.load()?.unpermissioned_vrf_enabled == true @ VrfFlipError::OracleQueueRequiresPermissions
+        // constraint = 
+        //     switchboard_queue.load()?.unpermissioned_vrf_enabled == true @ VrfFlipError::OracleQueueRequiresPermissions
     )]
     pub switchboard_queue: AccountLoader<'info, OracleQueueAccountData>,
 
