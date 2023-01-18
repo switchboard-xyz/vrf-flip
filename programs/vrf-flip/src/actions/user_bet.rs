@@ -128,7 +128,6 @@ pub struct UserBetParams {
 impl UserBet<'_> {
     pub fn validate(&self, ctx: &Context<Self>, params: &UserBetParams) -> anchor_lang::Result<()> {
         let user = ctx.accounts.user.load()?;
-        let clock = Clock::get()?;
 
         if user.current_round.is_open() {
             return Err(error!(VrfFlipError::CurrentRoundStillActive));
@@ -145,6 +144,7 @@ impl UserBet<'_> {
             return Err(error!(VrfFlipError::MaxBetAmountExceeded));
         }
 
+        // let clock = Clock::get()?;
         // if user.current_round.request_timestamp != 0
         //     && clock.unix_timestamp - 10 < user.current_round.request_timestamp
         // {
