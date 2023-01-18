@@ -22,6 +22,7 @@ pub struct UserAirdrop<'info> {
         seeds = [HOUSE_SEED],
         bump = house.load()?.bump,
         has_one = house_vault,
+        has_one = mint,
     )]
     pub house: AccountLoader<'info, HouseState>,
     #[account(
@@ -33,7 +34,7 @@ pub struct UserAirdrop<'info> {
     /// CHECK:
     #[account(
         mut,
-        mint::decimals = 9,
+        // mint::decimals = 9,
         // mint::authority = house,
         // mint::freeze_authority = house,
     )]

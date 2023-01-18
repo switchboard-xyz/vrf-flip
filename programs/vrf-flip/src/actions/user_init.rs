@@ -26,7 +26,7 @@ pub struct UserInit<'info> {
         has_one = mint
     )]
     pub house: AccountLoader<'info, HouseState>,
-    #[account(mint::decimals = 9)]
+    #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK:
     #[account(mut, signer)]

@@ -13,7 +13,8 @@ export type CustomError =
   | UserTokenBalanceHealthy
   | MaxBetAmountExceeded
   | InsufficientFunds
-  | FlipRequestedTooSoon;
+  | FlipRequestedTooSoon
+  | UnauthorizedMint;
 
 export class InvalidInitialVrfCounter extends Error {
   static readonly code = 6000;
@@ -183,6 +184,17 @@ export class FlipRequestedTooSoon extends Error {
   }
 }
 
+export class UnauthorizedMint extends Error {
+  static readonly code = 6015;
+  readonly code = 6015;
+  readonly name = "UnauthorizedMint";
+  readonly msg = "House has no authority to mint more tokens";
+
+  constructor(readonly logs?: string[]) {
+    super("6015: House has no authority to mint more tokens");
+  }
+}
+
 export function fromCode(code: number, logs?: string[]): CustomError | null {
   switch (code) {
     case 6000:
@@ -215,6 +227,8 @@ export function fromCode(code: number, logs?: string[]): CustomError | null {
       return new InsufficientFunds(logs);
     case 6014:
       return new FlipRequestedTooSoon(logs);
+    case 6015:
+      return new UnauthorizedMint(logs);
   }
 
   return null;

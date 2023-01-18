@@ -9,6 +9,7 @@ import {
 } from "@solana/web3.js";
 import { promiseWithTimeout, sleep } from "@switchboard-xyz/common";
 import {
+  AnchorWallet,
   Callback,
   PermissionAccount,
   QueueAccount,
@@ -319,11 +320,11 @@ export class User {
     gameType: GameTypeValue,
     userGuess: number,
     betAmount: anchor.BN,
-    payerPubkey = programWallet(this.program as any).publicKey
+    payerPubkey = this.program.switchboard.walletPubkey
   ): Promise<TransactionObject> {
-    try {
-      await verifyPayerBalance(this.program.provider.connection, payerPubkey);
-    } catch {}
+    // try {
+    //   await verifyPayerBalance(this.program.provider.connection, payerPubkey);
+    // } catch {}
 
     const vrfAccount = new VrfAccount(this.program.switchboard, this.state.vrf);
     const vrfAccounts = await vrfAccount.fetchAccounts();
