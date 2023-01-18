@@ -10,7 +10,6 @@ import {
 } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import { SwitchboardTestContextV2 } from "@switchboard-xyz/solana.js";
-import { Switchboard } from "./switchboard";
 
 // CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
@@ -34,8 +33,7 @@ describe("switchboard-vrf-flip", () => {
 
   let program: FlipProgram;
 
-  // let switchboard: SwitchboardTestContextV2;
-  let switchboard: Switchboard;
+  let switchboard: SwitchboardTestContextV2;
 
   let house: House;
 
@@ -43,12 +41,13 @@ describe("switchboard-vrf-flip", () => {
 
   before(async () => {
     console.log(`programId: ${anchorProgram.programId}`);
-    switchboard = await Switchboard.load(provider);
-    // switchboard = await SwitchboardTestContextV2.loadFromProvider(provider);
-    // await switchboard.start("dev-v2-RC_01_18_23_00_44");
+
+    switchboard = await SwitchboardTestContextV2.loadFromProvider(provider);
+
     console.log(`queue: ${switchboard.queue.publicKey}`);
     console.log(`oracle: ${switchboard.oracle.publicKey}`);
-    await switchboard.start();
+
+    await switchboard.start("dev-v2-RC_01_18_23_00_44");
   });
 
   after(async () => {

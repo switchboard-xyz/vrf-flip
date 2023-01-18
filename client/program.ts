@@ -67,15 +67,13 @@ export class FlipProgram {
 
   static async load(
     program: anchor.Program,
-    cluster: Cluster,
     params?: {
       queuePubkey?: PublicKey;
       mintKeypair?: Keypair;
     }
   ): Promise<FlipProgram> {
-    const switchboard = await SwitchboardProgram.load(
-      cluster,
-      program.provider.connection
+    const switchboard = await SwitchboardProgram.fromProvider(
+      program.provider as anchor.AnchorProvider
     );
 
     const [houseKey] = House.fromSeeds(program.programId);
