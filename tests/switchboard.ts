@@ -176,7 +176,7 @@ export class Switchboard {
           DEBUG: "1",
         },
       },
-      "dev-v2-RC_01_17_23_16_22b-beta",
+      "dev-v2-RC_01_18_23_00_44",
       undefined,
       true
     );

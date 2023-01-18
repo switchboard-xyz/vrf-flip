@@ -231,27 +231,28 @@
     rpc-websockets "^7.5.0"
     superstruct "^0.14.2"
 
-"@switchboard-xyz/common@^2.1.13":
-  version "2.1.13"
-  resolved "https://registry.npmjs.org/@switchboard-xyz/common/-/common-2.1.13.tgz#60dbce253a306ec40069dee83e070b68d271bacd"
-  integrity sha512-1lsYd9E+oHw4ADuAbjhTYSulvTB/PhHCmf1MH4l2Is4X318IHzxdzjeS/u1tze6Wgg9LssCWjfPMxC0FUQ4H3Q==
+"@switchboard-xyz/common@^2.1.16":
+  version "2.1.16"
+  resolved "https://registry.npmjs.org/@switchboard-xyz/common/-/common-2.1.16.tgz#20219ecff961a31d288133beea54e6a4f69f3ffa"
+  integrity sha512-Ld7HgRW6VajylPZcSddBqBaQTDAKEUraaozzpN1AzOxl8b4HTrYZ6JektJ35UiE1y1c7NGf8VVJ87lo3bvnrvA==
   dependencies:
     "@solana/web3.js" "^1.66.2"
     big.js "^6.2.1"
     bn.js "^5.2.1"
+    chalk "^4.1.2"
     decimal.js "^10.4.3"
     protobufjs "^7.1.2"
 
-"@switchboard-xyz/solana.js@^2.0.98":
-  version "2.0.98"
-  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.0.98.tgz#ad9fa0be9fa7129ea1eeafa9f638e8871380d3d0"
-  integrity sha512-ykyq0t0Q0JrvjkVwGyCYweJIvkrnxA7lJkUPOri+HCjL6fkEp4MpnPiRqTmC9k6IvWDH1ESTHCjZ3yN7F/7orw==
+"@switchboard-xyz/solana.js@^2.0.100":
+  version "2.0.100"
+  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.0.100.tgz#e78fa9a6ae9d65e4d3b1847b35aff3a1ab1c2dde"
+  integrity sha512-ygo/k+9bKKn9VTXaeqNkLayLXnJBWpS1qO/lSfBWn3NbwSnxMeW+N/vBEcHHph8HQkuMm4WllBYgEe6+nJIiCA==
   dependencies:
     "@project-serum/anchor" "^0.26.0"
     "@project-serum/borsh" "^0.2.5"
     "@solana/spl-token" "^0.3.6"
     "@solana/web3.js" "^1.73.0"
-    "@switchboard-xyz/common" "^2.1.13"
+    "@switchboard-xyz/common" "^2.1.16"
     dotenv "^16.0.3"
     lodash "^4.17.21"
 
@@ -576,7 +577,7 @@ chai@^4.3.4:
     pathval "^1.1.1"
     type-detect "^4.0.5"
 
-chalk@4, chalk@^4.1.0:
+chalk@4, chalk@^4.1.0, chalk@^4.1.2:
   version "4.1.2"
   resolved "https://registry.npmjs.org/chalk/-/chalk-4.1.2.tgz#aac4e2b7734a740867aeb16bf02aad556a1e7a01"
   integrity sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==
