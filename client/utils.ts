@@ -6,7 +6,7 @@ import {
   QueueAccount,
   SwitchboardProgram,
 } from "@switchboard-xyz/solana.js";
-import Big from "big.js";
+import { Big } from "@switchboard-xyz/common";
 import { PROGRAM_ID_CLI } from "./generated/programId";
 import { FlipProgram } from "./program";
 import { User } from "./user";
