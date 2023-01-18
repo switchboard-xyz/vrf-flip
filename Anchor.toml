@@ -20,13 +20,16 @@ test = "npx mocha --extension ts --require ts-node/register -t 1000000 tests/**/
 url="https://api.devnet.solana.com"
 
 [test]
-startup_wait = 10000
+startup_wait = 15000
 
 [[test.validator.clone]] # sbv2 devnet programID
 address = "2TfB33aLaneQb5TNVwyDz3jSZXS6jdW2ARw1Dgf84XCG"
 
-[[test.validator.clone]] # sbv2 devnet IDL address
+[[test.validator.clone]] # sbv2 devnet IDL
 address = "CKwZcshn4XDvhaWVH9EXnk3iu19t6t5xP2Sy2pD6TRDp"
 
-[[test.validator.clone]] # sbv2 devnet SbState account
+[[test.validator.clone]] # sbv2 devnet SbState
 address = "BYM81n8HvTJuqZU1PmTVcwZ9G8uoji7FKM6EaPkwphPt"
+
+[[test.validator.clone]] # sbv2 devnet tokenVault
+address = "FVLfR6C2ckZhbSwBzZY4CX7YBcddUSge5BNeGQv5eKhy"

@@ -242,10 +242,10 @@
     decimal.js "^10.4.3"
     protobufjs "^7.1.2"
 
-"@switchboard-xyz/solana.js@^2.0.104":
-  version "2.0.104"
-  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.0.104.tgz#3dd1039c9a3243a47792356ee3ca9232507c5ff2"
-  integrity sha512-cPIjTna+HSs2WHRs4o9/rZrJaH4f/rFNtyi62pMoJJU4Z9ArnP2D+CO2yD0V4z3hLSo2ycLshqKThx5+mJYLeQ==
+"@switchboard-xyz/solana.js@^2.0.105":
+  version "2.0.105"
+  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.0.105.tgz#c8230b30185d0e12fd66d8e5b2f1732e0a8a8fa4"
+  integrity sha512-ARIktba8IZKIvOVj9/JDOQXDfxGKD7PF+G/GlDqi8p3SN+icqwUagFs0Pst2ivz/x7A1Ajdr7tbV22V02nS0rA==
   dependencies:
     "@project-serum/anchor" "^0.26.0"
     "@project-serum/borsh" "^0.2.5"

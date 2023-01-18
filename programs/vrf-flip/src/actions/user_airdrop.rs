@@ -61,6 +61,11 @@ impl UserAirdrop<'_> {
         ctx: &Context<Self>,
         _params: &UserAirdropParams,
     ) -> anchor_lang::Result<()> {
+        if ctx.accounts.mint.mint_authority.is_none()
+        || ctx.accounts.mint.mint_authority.unwrap() != ctx.accounts.house.key()
+        {
+            return Err(error!(VrfFlipError::UnauthorizedMint));
+        }
         let user = ctx.accounts.user.load()?;
         if user.last_airdrop_request_slot == 0 {
             return Ok(());

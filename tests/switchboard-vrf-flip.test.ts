@@ -9,7 +9,10 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
-import { SwitchboardTestContextV2 } from "@switchboard-xyz/solana.js";
+import {
+  SwitchboardProgram,
+  SwitchboardTestContextV2,
+} from "@switchboard-xyz/solana.js";
 
 // CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
@@ -41,6 +44,9 @@ describe("switchboard-vrf-flip", () => {
 
   before(async () => {
     console.log(`programId: ${anchorProgram.programId}`);
+    const switchboardProgram = await SwitchboardProgram.fromProvider(provider);
+    console.log(`switchboard: ${switchboardProgram.programId}`);
+    console.log(`cluster: ${switchboardProgram.cluster}`);
 
     switchboard = await SwitchboardTestContextV2.loadFromProvider(provider);
 
