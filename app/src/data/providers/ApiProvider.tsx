@@ -157,7 +157,7 @@ class ApiState implements PrivateApiInterface {
 
     return api
       .getFlipProgram(this.rpc)
-      .then((program) => FlipProgram.load(program, this.cluster))
+      .then((program) => FlipProgram.load(program))
       .then(
         (program) =>
           (this._program ??= (() => {
