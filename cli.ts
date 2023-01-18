@@ -12,13 +12,11 @@ import {
   ParsedTransactionWithMeta,
   PublicKey,
 } from "@solana/web3.js";
-import * as sbv2Utils from "@switchboard-xyz/sbv2-utils";
-import * as sbv2 from "@switchboard-xyz/switchboard-v2";
 const yargs = require("yargs");
 const { hideBin } = require("yargs/helpers");
 // import yargs from "yargs";
 // import { hideBin } from "yargs/helpers";
-import { OracleQueueAccount } from "@switchboard-xyz/switchboard-v2";
+import { QueueAccount, SwitchboardProgram } from "@switchboard-xyz/solana.js";
 import chalk from "chalk";
 import fs from "fs";
 import {
@@ -32,7 +30,8 @@ import {
   UserState,
 } from "./client/index";
 import { IDL } from "./target/types/switchboard_vrf_flip";
-import { tokenAmountToBig } from "./client/utils";
+import { findAnchorTomlWallet, tokenAmountToBig } from "./client/utils";
+import { sleep } from "@switchboard-xyz/common";
 var Spinner = require("cli-spinner").Spinner;
 
 const DEFAULT_MAINNET_RPC = "https://api.mainnet-beta.solana.com";
@@ -73,23 +72,26 @@ yargs(hideBin(process.argv))
     async function (argv: any) {
       const { queueKey, rpcUrl, cluster, keypair, mintKeypair } = argv;
 
-      const { flipProgram, switchboardProgram, payer, provider } =
-        await loadCli(rpcUrl, cluster, loadKeypair(keypair));
+      const { flipAnchorProgram, switchboardProgram, provider } = await loadCli(
+        rpcUrl,
+        cluster,
+        keypair
+      );
 
       const mint = mintKeypair
         ? loadKeypair(mintKeypair)
         : anchor.web3.Keypair.generate();
 
-      const payerBalance = await checkNativeBalance(
-        flipProgram.provider.connection,
-        payer,
-        cluster === "mainnet-beta",
-        0.025 * LAMPORTS_PER_SOL
-      );
+      // const payerBalance = await checkNativeBalance(
+      //   flipProgram.provider.connection,
+      //   payer,
+      //   cluster === "mainnet-beta",
+      //   0.025 * LAMPORTS_PER_SOL
+      // );
 
       let house: House;
       try {
-        house = await House.load(flipProgram);
+        house = await House.load(flipAnchorProgram);
         console.log(
           `${chalk.blue("Info")}: VRF Flip House account (${chalk.yellow(
             house.publicKey.toBase58()
@@ -101,12 +103,12 @@ yargs(hideBin(process.argv))
         ) {
           throw error;
         }
-        const queueAccount = new OracleQueueAccount({
-          program: switchboardProgram as any,
-          publicKey: new PublicKey(queueKey),
-        });
+        const queueAccount = new QueueAccount(
+          switchboardProgram,
+          new PublicKey(queueKey)
+        );
 
-        house = await House.create(flipProgram, queueAccount, mint);
+        house = await House.create(flipAnchorProgram, queueAccount, mint);
 
         console.log(`${CHECK_ICON} House account created successfully`);
       }
@@ -138,24 +140,29 @@ yargs(hideBin(process.argv))
     async function (argv: any) {
       const { rpcUrl, cluster, keypair } = argv;
 
-      const { flipProgram, switchboardProgram, payer, provider } =
-        await loadCli(rpcUrl, cluster, loadKeypair(keypair));
-
-      const payerBalance = await checkNativeBalance(
-        flipProgram.provider.connection,
-        payer,
-        cluster === "mainnet-beta",
-        0.25 * LAMPORTS_PER_SOL
+      const { flipAnchorProgram, switchboardProgram, provider } = await loadCli(
+        rpcUrl,
+        cluster,
+        keypair
       );
+
+      const flipProgram = await FlipProgram.load(flipAnchorProgram);
+
+      // const payerBalance = await checkNativeBalance(
+      //   flipProgram.provider.connection,
+      //   payer,
+      //   cluster === "mainnet-beta",
+      //   0.25 * LAMPORTS_PER_SOL
+      // );
 
       let user: User;
       try {
-        user = await User.load(flipProgram, payer.publicKey);
+        user = await User.load(flipProgram, flipProgram.payerPubkey);
         console.log(
           `${chalk.blue("Info")}: VRF Flip User account (${chalk.yellow(
             user.publicKey.toBase58()
           )}) already exists for authority (${chalk.yellow(
-            payer.publicKey.toBase58()
+            flipProgram.payerPubkey.toBase58()
           )})`
         );
       } catch (error) {
@@ -163,7 +170,7 @@ yargs(hideBin(process.argv))
           throw error;
         }
 
-        user = await User.create(flipProgram, switchboardProgram);
+        user = await User.create(flipProgram);
 
         console.log(`${CHECK_ICON} User account created successfully`);
       }
@@ -254,56 +261,59 @@ yargs(hideBin(process.argv))
         }
       }
 
-      const { flipProgram, switchboardProgram, payer, provider } =
-        await loadCli(rpcUrl, cluster, loadKeypair(keypair));
-
-      const payerBalance = await checkNativeBalance(
-        flipProgram.provider.connection,
-        payer,
-        cluster === "mainnet-beta",
-        10000
+      const { flipAnchorProgram, switchboardProgram, provider } = await loadCli(
+        rpcUrl,
+        cluster,
+        keypair
       );
 
-      const house = await House.load(flipProgram);
-      const user = await User.load(flipProgram, payer.publicKey);
+      // const payerBalance = await checkNativeBalance(
+      //   flipProgram.provider.connection,
+      //   payer,
+      //   cluster === "mainnet-beta",
+      //   10000
+      // );
 
-      const flipMint = await house.loadMint();
-      const payerFlipTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
-        flipProgram.provider.connection,
-        payer,
-        flipMint.address,
-        payer.publicKey
-      );
-      const flipTokenBalance = await checkTokenBalance(
-        flipProgram.provider.connection,
-        payerFlipTokenAccount.address,
-        payer,
-        cluster === "mainnet-beta",
-        betAmount
-      );
+      const house = await House.load(flipAnchorProgram);
+      const flipProgram = await FlipProgram.load(flipAnchorProgram);
+      const user = await User.load(flipProgram, flipProgram.payerPubkey);
 
-      const queueAccount = await user.getQueueAccount(switchboardProgram);
-      const switchboardMint = await queueAccount.loadMint();
-      const payerSwitchTokenAccount =
-        await spl.getOrCreateAssociatedTokenAccount(
-          flipProgram.provider.connection,
-          payer,
-          switchboardMint.address,
-          payer.publicKey
-        );
-      const wrappedNativeBalance = await checkWrappedNativeBalance(
-        flipProgram.provider.connection,
-        payerSwitchTokenAccount.address,
-        payer,
-        cluster === "mainnet-beta",
-        VRF_REQUEST_AMOUNT
-      );
+      // const flipMint = await house.loadMint();
+      // const payerFlipTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
+      //   flipProgram.provider.connection,
+      //   payer,
+      //   flipMint.address,
+      //   payer.publicKey
+      // );
+      // const flipTokenBalance = await checkTokenBalance(
+      //   flipProgram.provider.connection,
+      //   payerFlipTokenAccount.address,
+      //   payer,
+      //   cluster === "mainnet-beta",
+      //   betAmount
+      // );
+
+      // const queueAccount = await user.getQueueAccount(switchboardProgram);
+      // const switchboardMint = await queueAccount.loadMint();
+      // const payerSwitchTokenAccount =
+      //   await spl.getOrCreateAssociatedTokenAccount(
+      //     flipProgram.provider.connection,
+      //     payer,
+      //     switchboardMint.address,
+      //     payer.publicKey
+      //   );
+      // const wrappedNativeBalance = await checkWrappedNativeBalance(
+      //   flipProgram.provider.connection,
+      //   payerSwitchTokenAccount.address,
+      //   payer,
+      //   cluster === "mainnet-beta",
+      //   VRF_REQUEST_AMOUNT
+      // );
 
       const placeBetSignature = await user.placeBet(
         gameTypeEnum,
         userGuess,
-        new anchor.BN(betAmount),
-        payerSwitchTokenAccount.address
+        new anchor.BN(betAmount)
       );
       // console.log(cliSpinners.bouncingBall);
       // const newUserState = await newUserStatePromise;
@@ -354,29 +364,35 @@ yargs(hideBin(process.argv))
     async function (argv: any) {
       const { rpcUrl, cluster, keypair } = argv;
 
-      const { flipProgram, switchboardProgram, payer, provider } =
-        await loadCli(rpcUrl, cluster, loadKeypair(keypair));
-
-      const house = await House.load(flipProgram);
-      const flipMint = await house.loadMint();
-      const payerTokenWallet = await spl.getOrCreateAssociatedTokenAccount(
-        flipProgram.provider.connection,
-        payer,
-        flipMint.address,
-        payer.publicKey
+      const { flipAnchorProgram, switchboardProgram, provider } = await loadCli(
+        rpcUrl,
+        cluster,
+        keypair
       );
-      const user = await User.load(flipProgram, payer.publicKey);
+
+      const house = await House.load(flipAnchorProgram);
+      const flipProgram = await FlipProgram.load(flipAnchorProgram);
+      // const flipMint = await house.loadMint();
+      // const payerTokenWallet = await spl.getOrCreateAssociatedTokenAccount(
+      //   flipProgram.provider.connection,
+      //   payer,
+      //   flipMint.address,
+      //   payer.publicKey
+      // );
+      const user = await User.load(flipProgram, flipProgram.payerPubkey);
 
       try {
-        const airdropReq = await flipProgram.methods
+        const airdropReq = await flipAnchorProgram.methods
           .userAirdrop({})
           .accounts({
             user: user.publicKey,
             house: house.publicKey,
             houseVault: house.state.houseVault,
             mint: house.state.mint,
-            authority: payer.publicKey,
-            airdropTokenWallet: payerTokenWallet.address,
+            authority: flipProgram.payerPubkey,
+            airdropTokenWallet: flipProgram.mint.getAssociatedAddress(
+              flipProgram.payerPubkey
+            ),
             tokenProgram: spl.TOKEN_PROGRAM_ID,
           })
           .rpc();
@@ -388,15 +404,12 @@ yargs(hideBin(process.argv))
         );
       } catch (error) {}
 
-      const flipBalance =
-        await flipProgram.provider.connection.getTokenAccountBalance(
-          payerTokenWallet.address
-        );
+      const flipBalance = await flipProgram.mint.getAssociatedBalance(
+        flipProgram.payerPubkey
+      );
 
       console.log(
-        `${chalk.blue("FLIP balance")}: ${chalk.yellow(
-          flipBalance.value.amount
-        )} (${flipBalance.value.uiAmountString} FLIP)`
+        `${chalk.blue("FLIP balance")}: ${chalk.yellow(flipBalance)} FLIP)`
       );
 
       process.exit(0);
@@ -415,12 +428,12 @@ yargs(hideBin(process.argv))
     async function (argv: any) {
       const { rpcUrl, cluster, authority } = argv;
 
-      const { flipProgram, switchboardProgram, payer, provider } =
-        await loadCli(
-          rpcUrl,
-          cluster,
-          Keypair.fromSeed(new Uint8Array(32).fill(1))
-        );
+      const { flipAnchorProgram, switchboardProgram, provider } = await loadCli(
+        rpcUrl,
+        cluster
+      );
+
+      const flipProgram = await FlipProgram.load(flipAnchorProgram);
 
       const user = await User.load(flipProgram, new PublicKey(authority));
 
@@ -504,55 +517,55 @@ async function checkNativeBalance(
   return BigInt(payerBalance);
 }
 
-async function checkWrappedNativeBalance(
-  connection: Connection,
-  wrappedNativeAddress: PublicKey,
-  payer: Keypair,
-  isMainnet: boolean,
-  minAmount = VRF_REQUEST_AMOUNT
-): Promise<BigInt> {
-  let tokenBalance = BigInt(
-    (await connection.getTokenAccountBalance(wrappedNativeAddress)).value.amount
-  );
-  if (tokenBalance < BigInt(minAmount)) {
-    if (isMainnet) {
-      throw new Error(
-        `wrapped native account has insufficient funds ${tokenBalance}, need ${minAmount}`
-      );
-    }
-    console.log(
-      `${chalk.blue("Info")}: Wrapping ${chalk.yellow(
-        VRF_REQUEST_AMOUNT
-      )} SOL to payers token wallet (${chalk.yellow(
-        wrappedNativeAddress.toBase58()
-      )})`
-    );
-    await sbv2Utils.transferWrappedSol(connection, payer, VRF_REQUEST_AMOUNT);
-  }
-  return tokenBalance;
-}
+// async function checkWrappedNativeBalance(
+//   connection: Connection,
+//   wrappedNativeAddress: PublicKey,
+//   payer: Keypair,
+//   isMainnet: boolean,
+//   minAmount = VRF_REQUEST_AMOUNT
+// ): Promise<BigInt> {
+//   let tokenBalance = BigInt(
+//     (await connection.getTokenAccountBalance(wrappedNativeAddress)).value.amount
+//   );
+//   if (tokenBalance < BigInt(minAmount)) {
+//     if (isMainnet) {
+//       throw new Error(
+//         `wrapped native account has insufficient funds ${tokenBalance}, need ${minAmount}`
+//       );
+//     }
+//     console.log(
+//       `${chalk.blue("Info")}: Wrapping ${chalk.yellow(
+//         VRF_REQUEST_AMOUNT
+//       )} SOL to payers token wallet (${chalk.yellow(
+//         wrappedNativeAddress.toBase58()
+//       )})`
+//     );
+//     await sbv2Utils.transferWrappedSol(connection, payer, VRF_REQUEST_AMOUNT);
+//   }
+//   return tokenBalance;
+// }
 
-async function checkTokenBalance(
-  connection: Connection,
-  tokenAddress: PublicKey,
-  payer: Keypair,
-  isMainnet: boolean,
-  minAmount = 100000
-): Promise<BigInt> {
-  let tokenBalance = BigInt(
-    (await connection.getTokenAccountBalance(tokenAddress)).value.amount
-  );
-  if (tokenBalance < BigInt(minAmount)) {
-    // if (isMainnet) {
-    throw new Error(
-      `token account (${chalk.yellow(
-        tokenAddress.toBase58()
-      )}) has insufficient funds ${tokenBalance}, need ${minAmount}`
-    );
-    // }
-  }
-  return tokenBalance;
-}
+// async function checkTokenBalance(
+//   connection: Connection,
+//   tokenAddress: PublicKey,
+//   payer: Keypair,
+//   isMainnet: boolean,
+//   minAmount = 100000
+// ): Promise<BigInt> {
+//   let tokenBalance = BigInt(
+//     (await connection.getTokenAccountBalance(tokenAddress)).value.amount
+//   );
+//   if (tokenBalance < BigInt(minAmount)) {
+//     // if (isMainnet) {
+//     throw new Error(
+//       `token account (${chalk.yellow(
+//         tokenAddress.toBase58()
+//       )}) has insufficient funds ${tokenBalance}, need ${minAmount}`
+//     );
+//     // }
+//   }
+//   return tokenBalance;
+// }
 
 function loadKeypair(keypairPath: string): Keypair {
   return Keypair.fromSecretKey(
@@ -561,13 +574,13 @@ function loadKeypair(keypairPath: string): Keypair {
 }
 
 async function loadCli(
-  rpcUrl: string,
-  cluster: string,
-  keypair: Keypair
+  rpcUrl?: string,
+  cluster?: string,
+  keypairPath?: string
 ): Promise<{
-  flipProgram: FlipProgram;
-  switchboardProgram: anchor.Program;
-  payer: anchor.web3.Keypair;
+  flipAnchorProgram: anchor.Program;
+  switchboardProgram: SwitchboardProgram;
+  // payer: anchor.web3.Keypair;
   provider: anchor.AnchorProvider;
 }> {
   if (
@@ -580,32 +593,26 @@ async function loadCli(
     );
   }
 
-  process.env.ANCHOR_WALLET = sbv2Utils.getAnchorWalletPath();
+  const walletPath = keypairPath ?? findAnchorTomlWallet();
+  process.env.ANCHOR_WALLET = walletPath;
   const url = rpcUrl ?? getRpcUrl(cluster);
   // const envProvider = anchor.AnchorProvider.local(url);
+
   const provider = new anchor.AnchorProvider(
     new anchor.web3.Connection(url, {
       commitment: DEFAULT_COMMITMENT,
     }),
-    new anchor.Wallet(keypair),
+    new anchor.Wallet(loadKeypair(walletPath)),
     {
       commitment: DEFAULT_COMMITMENT,
     }
   );
 
-  const switchboardProgram = await sbv2.loadSwitchboardProgram(
-    cluster === "mainnet-beta" ? "mainnet-beta" : "devnet",
-    provider.connection,
-    keypair,
-    {
-      commitment: DEFAULT_COMMITMENT,
-    }
-  );
-  const payer = sbv2.programWallet(switchboardProgram);
+  const switchboardProgram = await SwitchboardProgram.fromProvider(provider);
 
   // load VRF Client program
   // @TODO load IDL asynchronously?
-  const flipProgram = new anchor.Program(
+  const flipAnchorProgram = new anchor.Program(
     IDL,
     PROGRAM_ID,
     provider,
@@ -613,9 +620,8 @@ async function loadCli(
   );
 
   return {
-    flipProgram: flipProgram as any as FlipProgram,
-    switchboardProgram: switchboardProgram as any,
-    payer,
+    flipAnchorProgram,
+    switchboardProgram,
     provider,
   };
 }
@@ -643,7 +649,7 @@ async function fetchTransactions(
     );
 
     if (!parsedTxns || parsedTxns.length !== signatures.length) {
-      await sbv2Utils.sleep(1000);
+      await sleep(1000);
     }
   }
 

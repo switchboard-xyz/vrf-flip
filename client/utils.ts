@@ -10,6 +10,9 @@ import { Big } from "@switchboard-xyz/common";
 import { PROGRAM_ID_CLI } from "./generated/programId";
 import { FlipProgram } from "./program";
 import { User } from "./user";
+import path from "path";
+import fs from "fs";
+import os from "os";
 
 const DEFAULT_COMMITMENT = "confirmed";
 
@@ -167,3 +170,31 @@ export const verifyPayerBalance = async (
     console.error(error);
   }
 };
+
+export function findAnchorTomlWallet(workingDir = process.cwd()): string {
+  let numDirs = 3;
+  while (numDirs) {
+    const filePath = path.join(workingDir, "Anchor.toml");
+    if (fs.existsSync(filePath)) {
+      const fileString = fs.readFileSync(filePath, "utf-8");
+      const matches = Array.from(
+        fileString.matchAll(new RegExp(/wallet = "(?<wallet_path>.*)"/g))
+      );
+      if (matches && matches.length > 0 && matches[0].groups["wallet_path"]) {
+        const walletPath = matches[0].groups["wallet_path"];
+        return walletPath.startsWith("/") ||
+          walletPath.startsWith("C:") ||
+          walletPath.startsWith("D:")
+          ? walletPath
+          : walletPath.startsWith("~")
+          ? path.join(os.homedir(), walletPath.slice(1))
+          : path.join(process.cwd(), walletPath);
+      }
+    }
+
+    workingDir = path.dirname(workingDir);
+    --numDirs;
+  }
+
+  throw new Error(`Failed to find wallet path in Anchor.toml`);
+}
