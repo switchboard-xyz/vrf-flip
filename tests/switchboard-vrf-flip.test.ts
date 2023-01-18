@@ -9,6 +9,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
+import { SwitchboardTestContextV2 } from "@switchboard-xyz/solana.js";
 import { Switchboard } from "./switchboard";
 
 // CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
@@ -31,15 +32,9 @@ describe("switchboard-vrf-flip", () => {
   const anchorProgram: Program<SwitchboardVrfFlip> =
     anchor.workspace.SwitchboardVrfFlip;
 
-  // const anchorProgram: Program<SwitchboardVrfFlip> = new Program(
-  //   IDL,
-  //   PROGRAM_ID,
-  //   provider,
-  //   new anchor.BorshCoder(IDL)
-  // );
-
   let program: FlipProgram;
 
+  // let switchboard: SwitchboardTestContextV2;
   let switchboard: Switchboard;
 
   let house: House;
@@ -49,6 +44,8 @@ describe("switchboard-vrf-flip", () => {
   before(async () => {
     console.log(`programId: ${anchorProgram.programId}`);
     switchboard = await Switchboard.load(provider);
+    // switchboard = await SwitchboardTestContextV2.loadFromProvider(provider);
+    // await switchboard.start("dev-v2-RC_01_18_23_00_44");
     console.log(`queue: ${switchboard.queue.publicKey}`);
     console.log(`oracle: ${switchboard.oracle.publicKey}`);
     await switchboard.start();

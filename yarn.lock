@@ -231,17 +231,6 @@
     rpc-websockets "^7.5.0"
     superstruct "^0.14.2"
 
-"@switchboard-xyz/common@^2.1.17":
-  version "2.1.17"
-  resolved "https://registry.npmjs.org/@switchboard-xyz/common/-/common-2.1.17.tgz#3bd91fca3f902cdc6bdcab5817b4f5d86fe96e00"
-  integrity sha512-GVg0TR4e0TC8EmaaKYx7ZD+llV5VozBPhYGnqCGib72nF94kFKEzq7YG5Q+m+XGK5AdwLW4hysCOKkEw8n9gIA==
-  dependencies:
-    "@solana/web3.js" "^1.66.2"
-    big.js "^6.2.1"
-    bn.js "^5.2.1"
-    decimal.js "^10.4.3"
-    protobufjs "^7.1.2"
-
 "@switchboard-xyz/common@^2.1.19":
   version "2.1.19"
   resolved "https://registry.npmjs.org/@switchboard-xyz/common/-/common-2.1.19.tgz#fc734aa6703b41ed6d9a9e1bd09e8f8ee5e0ffcb"
@@ -253,16 +242,16 @@
     decimal.js "^10.4.3"
     protobufjs "^7.1.2"
 
-"@switchboard-xyz/solana.js@^2.0.101":
-  version "2.0.101"
-  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.0.101.tgz#4eff47b6d508975baa17a0a9f16b456a9b7c9b11"
-  integrity sha512-ec1Wf9F6CtZfewEeA79PW9dhTTO3ka00E4a3utldurq3iiRM4ANGtjugrlCQQ0Us306We/1YxrXaykPmFhQX6A==
+"@switchboard-xyz/solana.js@^2.0.103":
+  version "2.0.103"
+  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.0.103.tgz#08f6587bf541e2a38d5eb9764f550af0cf63c30e"
+  integrity sha512-Xok37uBhooG7RwfsB1AGWUFb8uoOWFBEA6IonKIi8HsxUPEKS9QP2/qyb0HZrjyp2Chu30y3DxjT6CS4Ss4WfQ==
   dependencies:
     "@project-serum/anchor" "^0.26.0"
     "@project-serum/borsh" "^0.2.5"
     "@solana/spl-token" "^0.3.6"
     "@solana/web3.js" "^1.73.0"
-    "@switchboard-xyz/common" "^2.1.17"
+    "@switchboard-xyz/common" "^2.1.19"
     dotenv "^16.0.3"
     lodash "^4.17.21"
 

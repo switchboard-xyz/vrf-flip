@@ -90,12 +90,6 @@ export class House {
       skipPreflight: true,
     });
 
-    // const txn = initHouse.toTxn(
-    //   await program.provider.connection.getLatestBlockhash()
-    // );
-
-    // await program.provider.sendAndConfirm(txn, initHouse.signers);
-
     let retryCount = 5;
     while (retryCount) {
       const houseState = await HouseState.fetch(
@@ -119,9 +113,6 @@ export class House {
   ): Promise<[TransactionObject, PublicKey]> {
     const payer = switchboardQueue.program.walletPubkey;
 
-    // const ixns: Array<TransactionInstruction> = [];
-    // const signers: Array<Keypair> = [];
-
     const [houseKey, houseBump] = House.fromSeeds(program.programId);
 
     const mintPubkey: PublicKey = mint.publicKey;
@@ -130,38 +121,6 @@ export class House {
       [houseKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintPubkey.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
-
-    // try {
-    //   await getMint(program.provider.connection, mintPubkey);
-    //   ixns.push(
-    //     createAssociatedTokenAccountInstruction(
-    //       payer,
-    //       tokenVault,
-    //       houseKey,
-    //       mintPubkey
-    //     )
-    //   );
-    // } catch {
-    //   if (mint instanceof PublicKey) {
-    //     throw new Error(`Failed to find mint ${mintPubkey}`);
-    //   }
-    //   signers.push(mint);
-    //   ixns.push(
-    //     createInitializeMintInstruction(mintPubkey, 9, payer, null),
-    //     createAssociatedTokenAccountInstruction(
-    //       payer,
-    //       tokenVault,
-    //       houseKey,
-    //       mintPubkey
-    //     ),
-    //     createMintToInstruction(
-    //       mintPubkey,
-    //       tokenVault,
-    //       payer,
-    //       BigInt(1000000000000000)
-    //     )
-    //   );
-    // }
 
     const initHouse = houseInit(
       { params: {} },
@@ -186,10 +145,6 @@ export class House {
   static async load(program: anchor.Program): Promise<House> {
     const connection = program.provider.connection;
     const [houseKey, houseBump] = House.fromSeeds(program.programId);
-
-    const switchboard = await SwitchboardProgram.fromProvider(
-      program.provider as anchor.AnchorProvider
-    );
 
     let houseState = await HouseState.fetch(connection, houseKey);
     if (houseState !== null) {
