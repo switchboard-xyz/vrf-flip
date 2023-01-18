@@ -99,18 +99,21 @@ export async function createFlipUser(
     program.switchboard.mint
   );
 
-  const switchTokenWallet = await createWrappedNativeAccount(
-    newSwitchboardProgram.provider.connection,
-    keypair,
-    keypair.publicKey,
-    wSolAmount * anchor.web3.LAMPORTS_PER_SOL
-  );
+  const switchTokenWallet =
+    wSolAmount > 0
+      ? await createWrappedNativeAccount(
+          newSwitchboardProgram.provider.connection,
+          keypair,
+          keypair.publicKey,
+          wSolAmount * anchor.web3.LAMPORTS_PER_SOL
+        )
+      : newSwitchboardProgram.mint.getAssociatedAddress(keypair.publicKey);
 
   const flipProgram = new FlipProgram(
     flipAnchorProgram,
     program.house,
     program.mint,
-    new QueueAccount(newSwitchboardProgram, program.queue.publicKey)
+    new QueueAccount(newSwitchboardProgram, program.queue.publicKey) // rebuild the queue with the new switchboard program + provider
   );
 
   const user = await User.create(flipProgram);

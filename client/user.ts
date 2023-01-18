@@ -22,7 +22,7 @@ import { userAirdrop, userBet, userInit } from "./generated/instructions";
 import { House } from "./house";
 import { FlipProgram } from "./program";
 import { convertGameType, GameTypeEnum, GameTypeValue } from "./types";
-import { programWallet, verifyPayerBalance } from "./utils";
+import { verifyPayerBalance } from "./utils";
 
 export interface UserBetPlaced {
   roundId: anchor.BN;
@@ -253,21 +253,6 @@ export class User {
       vrfAccount.publicKey
     );
 
-    console.log({
-      user: userKey.toBase58(),
-      house: program.house.publicKey.toBase58(),
-      mint: program.mint.address.toBase58(),
-      authority: payerPubkey.toBase58(),
-      escrow: escrowKeypair.publicKey.toBase58(),
-      rewardAddress: rewardAddress.toBase58(),
-      vrf: vrfAccount.publicKey.toBase58(),
-      payer: payerPubkey.toBase58(),
-      systemProgram: anchor.web3.SystemProgram.programId.toBase58(),
-      tokenProgram: spl.TOKEN_PROGRAM_ID.toBase58(),
-      associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID.toBase58(),
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY.toBase58(),
-    });
-
     const vrfClientInitTxn = new TransactionObject(
       payerPubkey,
       [
@@ -303,14 +288,13 @@ export class User {
   async placeBet(
     gameType: GameTypeValue,
     userGuess: number,
-    betAmount: anchor.BN,
-    payerPubkey = this.program.payerPubkey
+    betAmount: anchor.BN
   ): Promise<TransactionSignature> {
     const betTxn = await this.placeBetReq(
       gameType,
       userGuess,
       betAmount,
-      payerPubkey
+      this.program.switchboard.walletPubkey
     );
     const signature = await this.program.switchboard.signAndSend(betTxn);
     return signature;
@@ -320,7 +304,7 @@ export class User {
     gameType: GameTypeValue,
     userGuess: number,
     betAmount: anchor.BN,
-    payerPubkey = this.program.switchboard.walletPubkey
+    payerPubkey = this.program.payerPubkey
   ): Promise<TransactionObject> {
     // try {
     //   await verifyPayerBalance(this.program.provider.connection, payerPubkey);
@@ -417,19 +401,13 @@ export class User {
     gameType: GameTypeValue,
     userGuess: number,
     betAmount: anchor.BN,
-    switchboardTokenAccount?: PublicKey,
     timeout = 30
   ): Promise<UserState> {
     await this.reload();
     const currentCounter = this.state.currentRound.roundId;
 
     try {
-      const placeBetTxn = await this.placeBet(
-        gameType,
-        userGuess,
-        betAmount,
-        switchboardTokenAccount
-      );
+      const placeBetTxn = await this.placeBet(gameType, userGuess, betAmount);
     } catch (error) {
       console.error(error);
       throw error;

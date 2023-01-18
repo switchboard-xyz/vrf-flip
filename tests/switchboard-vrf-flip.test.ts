@@ -1,6 +1,4 @@
 import * as anchor from "@project-serum/anchor";
-import fs from "fs";
-import path from "path";
 import { Program } from "@project-serum/anchor";
 import { IDL, SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
 import { FlipProgram, GameTypeValue, House, User } from "../client";
@@ -10,13 +8,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { AnchorWallet, SwitchboardProgram } from "@switchboard-xyz/solana.js";
-import {
-  Keypair,
-  LAMPORTS_PER_SOL,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import { Switchboard } from "./switchboard";
 
 // CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
@@ -134,7 +126,6 @@ describe("switchboard-vrf-flip", () => {
         GameTypeValue.COIN_FLIP,
         1,
         new anchor.BN(0),
-        flipUser.switchTokenWallet,
         45
       );
       flipUser.user.state = newUserState;
@@ -171,7 +162,6 @@ describe("switchboard-vrf-flip", () => {
         GameTypeValue.COIN_FLIP,
         1,
         new anchor.BN(0),
-        flipUser.switchTokenWallet,
         45
       );
       flipUser.user.state = newUserState;
@@ -229,17 +219,11 @@ describe("switchboard-vrf-flip", () => {
     const bet1 = await user2.user.placeBet(
       GameTypeValue.COIN_FLIP,
       1,
-      new anchor.BN(0),
-      user2.switchTokenWallet
+      new anchor.BN(0)
     );
 
     assert.rejects(async () => {
-      await user2.user.placeBet(
-        GameTypeValue.COIN_FLIP,
-        1,
-        new anchor.BN(0),
-        user2.switchTokenWallet
-      );
+      await user2.user.placeBet(GameTypeValue.COIN_FLIP, 1, new anchor.BN(0));
     }, new RegExp(/0x1775/g));
   });
 
@@ -251,7 +235,6 @@ describe("switchboard-vrf-flip", () => {
         GameTypeValue.SIX_SIDED_DICE_ROLL,
         3,
         new anchor.BN(0),
-        user3.switchTokenWallet,
         45
       );
 
@@ -278,7 +261,6 @@ describe("switchboard-vrf-flip", () => {
         GameTypeValue.SIX_SIDED_DICE_ROLL,
         7,
         new anchor.BN(0),
-        user4.switchTokenWallet,
         45
       );
     }, new RegExp(/0x1777/g));
@@ -292,7 +274,6 @@ describe("switchboard-vrf-flip", () => {
         GameTypeValue.TWENTY_SIDED_DICE_ROLL,
         13,
         new anchor.BN(0),
-        user5.switchTokenWallet,
         45
       );
 
@@ -317,8 +298,7 @@ describe("switchboard-vrf-flip", () => {
     await user.user.placeBetAndAwaitFlip(
       GameTypeValue.COIN_FLIP,
       1,
-      new anchor.BN(0),
-      user.switchTokenWallet
+      new anchor.BN(0)
     );
   });
 
@@ -329,8 +309,7 @@ describe("switchboard-vrf-flip", () => {
       await user.user.placeBetAndAwaitFlip(
         GameTypeValue.COIN_FLIP,
         1,
-        new anchor.BN(0),
-        user.switchTokenWallet
+        new anchor.BN(0)
       );
     } catch (error) {
       console.error(error);
@@ -342,31 +321,10 @@ describe("switchboard-vrf-flip", () => {
   });
 
   it("a new user flips a coin with no wrapped sol wallet provided", async () => {
-    const keypair = anchor.web3.Keypair.generate();
-    const airdropTxn = await program.provider.connection.requestAirdrop(
-      keypair.publicKey,
-      1 * anchor.web3.LAMPORTS_PER_SOL
-    );
-    await program.provider.connection.confirmTransaction(airdropTxn);
-
-    const provider = new anchor.AnchorProvider(
-      program.provider.connection,
-      new AnchorWallet(keypair),
-      {}
-    );
-    const flipProgram = new anchor.Program(
-      program.idl,
-      program.programId,
-      provider
-    );
-    const newSwitchboardProgram = await SwitchboardProgram.fromProvider(
-      flipProgram.provider as anchor.AnchorProvider
-    );
-
-    const user = await User.create(program);
+    const user = await createFlipUser(program, 0);
 
     try {
-      await user.placeBetAndAwaitFlip(
+      await user.user.placeBetAndAwaitFlip(
         GameTypeValue.COIN_FLIP,
         1,
         new anchor.BN(0)

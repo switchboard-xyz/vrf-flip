@@ -145,11 +145,11 @@ impl UserBet<'_> {
             return Err(error!(VrfFlipError::MaxBetAmountExceeded));
         }
 
-        if user.current_round.request_timestamp != 0
-            && clock.unix_timestamp - 10 < user.current_round.request_timestamp
-        {
-            return Err(error!(VrfFlipError::FlipRequestedTooSoon));
-        }
+        // if user.current_round.request_timestamp != 0
+        //     && clock.unix_timestamp - 10 < user.current_round.request_timestamp
+        // {
+        //     return Err(error!(VrfFlipError::FlipRequestedTooSoon));
+        // }
 
         // check FLIP balance
         if ctx.accounts.flip_payer.amount < params.bet_amount {
