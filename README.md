@@ -5,7 +5,7 @@ toss.
 
 ## Setup
 
-```
+```bash
 git clone https://github.com/switchboard-xyz/vrf-flip.git && cd vrf-flip
 yarn install
 yarn link
@@ -13,13 +13,13 @@ yarn link
 
 Setup program keypairs and client for your environment
 
-```
+```bash
 yarn client:gen
 ```
 
 Deploy the program to devnet with your new Program ID
 
-```
+```bash
 anchor build && anchor deploy
 ```
 
@@ -30,13 +30,13 @@ below.
 
 Create a keypair for the house authority
 
-```
- solana-keygen new --no-bip39-passphrase --outfile house-authority-keypair.json
+```bash
+solana-keygen new --no-bip39-passphrase --outfile house-authority-keypair.json
 ```
 
 Create the House account
 
-```
+```bash
 sbv2-vrf-flip init house-authority-keypair.json F8ce7MsckeZAbAGmxjJNetxYXQa9mKr9nnrC3qKubyYy
 # sbv2-vrf-flip init KEYPAIR QUEUEKEY
 ```
@@ -46,25 +46,25 @@ sbv2-vrf-flip init house-authority-keypair.json F8ce7MsckeZAbAGmxjJNetxYXQa9mKr9
 
 Create a keypair for the user
 
-```
- solana-keygen new --no-bip39-passphrase --outfile user-keypair.json
+```bash
+solana-keygen new --no-bip39-passphrase --outfile user-keypair.json
 ```
 
 Create the User account
 
-```
+```bash
 sbv2-vrf-flip create user-keypair.json
 ```
 
 Request some FLIP tokens
 
-```
+```bash
 sbv2-vrf-flip airdrop user-keypair.json
 ```
 
 PLAY!
 
-```
+```bash
 sbv2-vrf-flip play user-keypair.json --gameType coin-flip --guess 2
 ```
 
@@ -77,7 +77,7 @@ where,
 
 ## Speed Run
 
-```
+```bash
 solana-keygen new --no-bip39-passphrase --outfile house-authority-keypair.json
 sbv2-vrf-flip init house-authority-keypair.json F8ce7MsckeZAbAGmxjJNetxYXQa9mKr9nnrC3qKubyYy
 solana-keygen new --no-bip39-passphrase --outfile user-keypair.json
@@ -85,33 +85,3 @@ sbv2-vrf-flip create user-keypair.json
 sbv2-vrf-flip airdrop user-keypair.json
 sbv2-vrf-flip play user-keypair.json --gameType coin-flip --guess 2
 ```
-
-### Optional, Setup a Localnet Switchboard Environment
-
-Run the following command to create a localnet switchboard environment
-
-```
-sbv2 solana localnet env --keypair ~/.config/solana/id.json
-```
-
-This command will output:
-
-- **start-local-validator.sh**: starts a local Solana validator with the
-  Switchboard program, IDL, and our devnet environment pre-loaded
-- **start-oracle.sh**: start a Switchboard oracle and start heartbeating on the
-  localnet queue
-- **docker-compose.yml**: docker file with the Switchboard oracle environment
-- **switchboard.env**: contains your Switchboard accounts
-
-In three separate shells, run the following commands in this order:
-
-- `./.switchboard/start-local-validator.sh`
-- `./.switchboard/start-oracle.sh`
-- `anchor test --skip-local-validator`
-
-The anchor test are configured to first fetch the account info for the
-Switchboard DAO controlled devnet permissionless queue. If the account info is
-not found, it assumes a localnet connection and looks for the `switchboard.env`
-with your Switchboard environment specific public keys. If a`.switchboard`
-directory or `switchboard.env` file is not found in the root project directory,
-it will look 2 levels higher until giving up.

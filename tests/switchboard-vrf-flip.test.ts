@@ -1,6 +1,6 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { IDL, SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
+import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
 import { FlipProgram, GameTypeValue, House, User } from "../client";
 import { createFlipUser, FlipUser } from "../client/utils";
 import assert from "assert";
@@ -9,10 +9,8 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
-import {
-  SwitchboardProgram,
-  SwitchboardTestContextV2,
-} from "@switchboard-xyz/solana.js";
+import { SwitchboardTestContextV2 } from "@switchboard-xyz/solana.js";
+import { VRF_FLIP_NETWORK } from "./switchboard-network";
 
 // CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
@@ -26,8 +24,6 @@ export const MINT_KEYPAIR = Keypair.fromSecretKey(
 
 describe("switchboard-vrf-flip", () => {
   const provider = anchor.AnchorProvider.local();
-
-  console.log(`rpcUrl: ${provider.connection.rpcEndpoint}`);
 
   anchor.setProvider(provider);
 
@@ -43,22 +39,20 @@ describe("switchboard-vrf-flip", () => {
   let flipUser: FlipUser;
 
   before(async () => {
-    console.log(`programId: ${anchorProgram.programId}`);
-    const switchboardProgram = await SwitchboardProgram.fromProvider(provider);
-    console.log(`switchboard: ${switchboardProgram.programId}`);
-    console.log(`cluster: ${switchboardProgram.cluster}`);
+    console.log(`vrf-flip programId: ${anchorProgram.programId}`);
 
-    switchboard = await SwitchboardTestContextV2.loadFromProvider(provider);
-
-    console.log(`queue: ${switchboard.queue.publicKey}`);
-    console.log(`oracle: ${switchboard.oracle.publicKey}`);
-
-    await switchboard.start("dev-v2-RC_01_18_23_00_44");
+    switchboard = await SwitchboardTestContextV2.loadFromProvider(
+      provider,
+      VRF_FLIP_NETWORK
+    );
 
     console.log(
-      `switchboardDir: ${switchboard.dockerOracle!.switchboardDirectory}`
+      `switchboard programId: ${switchboard.queue.program.programId}`
     );
-    console.log(`silent: ${switchboard.dockerOracle!.silent}`);
+    console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
+    console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
+
+    await switchboard.start("dev-v2-RC_01_18_23_21_48", undefined);
   });
 
   after(async () => {
