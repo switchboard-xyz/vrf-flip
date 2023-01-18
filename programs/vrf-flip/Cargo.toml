@@ -17,12 +17,12 @@ default = []
 # devnet = ["switchboard-v2/devnet"]
 
 [dependencies]
-anchor-lang =  { version = "0.25.0", features = ["init-if-needed"] }
-anchor-spl = "0.25.0"
+anchor-lang =  { version = "~0.26.0", features = ["init-if-needed"] }
+anchor-spl = "~0.26.0"
 bytemuck = "1.7.2"
-switchboard-v2 = { version = "0.1.16", features = ["devnet"] }
+switchboard-v2 = { version = "0.1.20", features = ["devnet"] }
 # switchboard-v2 = { path = "../../../switchboard-v2/libraries/rs", features = ["devnet"]  }
-solana-program = "1.10.29"
+solana-program = "1.14.10"
 num-traits = "0.2"
 num-derive = "0.3"
 solana-security-txt = "1.0.1"
