@@ -2,8 +2,6 @@
 seeds = false
 [programs.localnet]
 switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
-[programs.mainnet]
-switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
 
 [registry]
 url = "https://anchor.projectserum.com"

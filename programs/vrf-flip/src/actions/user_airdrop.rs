@@ -34,9 +34,6 @@ pub struct UserAirdrop<'info> {
     /// CHECK:
     #[account(
         mut,
-        // mint::decimals = 9,
-        // mint::authority = house,
-        // mint::freeze_authority = house,
     )]
     pub mint: Account<'info, Mint>,
     /// CHECK:

@@ -54,6 +54,11 @@ describe("switchboard-vrf-flip", () => {
     console.log(`oracle: ${switchboard.oracle.publicKey}`);
 
     await switchboard.start("dev-v2-RC_01_18_23_00_44");
+
+    console.log(
+      `switchboardDir: ${switchboard.dockerOracle!.switchboardDirectory}`
+    );
+    console.log(`silent: ${switchboard.dockerOracle!.silent}`);
   });
 
   after(async () => {
