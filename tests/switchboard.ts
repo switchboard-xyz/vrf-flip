@@ -12,6 +12,7 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import { DockerOracle } from "@switchboard-xyz/common";
+import { findAnchorTomlWallet } from "../client";
 
 // queuePubkey: ACzh7Ra83zyjyBn1yv4JLZ1jC41kxTcMyuoFN8z1BTPX
 // oraclePubkey: Ei4HcqRQtf6TfwbuRXKRwCtt8PDXhmq9NhYLWpoh23xp
@@ -82,40 +83,9 @@ export class Switchboard {
     return this.network.oracles[0].account;
   }
 
-  private static parseAnchorTomlWallet(directory: string): string | undefined {
-    const filePath = path.join(directory, "Anchor.toml");
-    if (fs.existsSync(filePath)) {
-      const fileString = fs.readFileSync(filePath, "utf-8");
-      const matches = Array.from(
-        fileString.matchAll(new RegExp(/wallet = "(?<wallet_path>.*)"/g))
-      );
-      if (matches && matches.length > 0 && matches[0].groups["wallet_path"]) {
-        return normalizeFsPath(matches[0].groups["wallet_path"]);
-      }
-    }
-
-    return undefined;
-  }
-
-  static getWalletPath(): string {
-    let workingDir = process.cwd();
-    let numDirs = 3;
-    while (numDirs) {
-      const walletPath = Switchboard.parseAnchorTomlWallet(workingDir);
-      if (walletPath) {
-        return walletPath;
-      }
-
-      workingDir = path.dirname(workingDir);
-      --numDirs;
-    }
-
-    throw new Error(`Failed to find wallet path in Anchor.toml`);
-  }
-
   static async load(provider: AnchorProvider): Promise<Switchboard> {
     const program = await SwitchboardProgram.fromProvider(provider);
-    const walletPath = Switchboard.getWalletPath();
+    const walletPath = findAnchorTomlWallet();
     const wallet = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(fs.readFileSync(walletPath, "utf-8")))
     );
@@ -196,14 +166,4 @@ export class Switchboard {
       }
     }
   }
-}
-
-function normalizeFsPath(fsPath: string) {
-  return fsPath.startsWith("/") ||
-    fsPath.startsWith("C:") ||
-    fsPath.startsWith("D:")
-    ? fsPath
-    : fsPath.startsWith("~")
-    ? path.join(os.homedir(), fsPath.slice(1))
-    : path.join(process.cwd(), fsPath);
 }
