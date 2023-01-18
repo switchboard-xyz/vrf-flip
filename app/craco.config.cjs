@@ -47,6 +47,8 @@ module.exports = {
             fs: false,
             os: false,
             path: false,
+            assert: false,
+            child_process: false,
             // process: false,
             crypto: require.resolve('crypto-browserify/'),
             // assert: require.resolve('assert/'),

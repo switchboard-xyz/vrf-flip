@@ -1,5 +1,6 @@
 import * as anchor from "@project-serum/anchor";
 import {
+  Cluster,
   Connection,
   Keypair,
   PublicKey,
@@ -66,13 +67,15 @@ export class FlipProgram {
 
   static async load(
     program: anchor.Program,
+    cluster: Cluster,
     params?: {
       queuePubkey?: PublicKey;
       mintKeypair?: Keypair;
     }
   ): Promise<FlipProgram> {
-    const switchboard = await SwitchboardProgram.fromProvider(
-      program.provider as anchor.AnchorProvider
+    const switchboard = await SwitchboardProgram.load(
+      cluster,
+      program.provider.connection
     );
 
     const [houseKey] = House.fromSeeds(program.programId);
