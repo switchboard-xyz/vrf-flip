@@ -23,9 +23,11 @@ export const MINT_KEYPAIR = Keypair.fromSecretKey(
 );
 
 describe("switchboard-vrf-flip", () => {
-  const provider = anchor.AnchorProvider.local();
+  const provider = anchor.AnchorProvider.env();
 
   anchor.setProvider(provider);
+
+  console.log(provider.connection.rpcEndpoint);
 
   const anchorProgram: Program<SwitchboardVrfFlip> =
     anchor.workspace.SwitchboardVrfFlip;
@@ -52,7 +54,7 @@ describe("switchboard-vrf-flip", () => {
     console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
     console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
 
-    await switchboard.start("dev-v2-RC_01_18_23_21_48", undefined);
+    await switchboard.start("dev-v2-RC_01_18_23_21_48-beta", undefined);
   });
 
   after(async () => {
