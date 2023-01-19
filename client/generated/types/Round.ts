@@ -1,61 +1,61 @@
-import { PublicKey } from "@solana/web3.js" // eslint-disable-line @typescript-eslint/no-unused-vars
-import BN from "bn.js" // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as types from "../types" // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as borsh from "@project-serum/borsh"
+import { PublicKey } from "@solana/web3.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import BN from "bn.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as types from "../types"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as borsh from "@project-serum/borsh";
 
 export interface RoundFields {
-  roundId: BN
-  status: types.RoundStatusKind
-  betAmount: BN
-  gameType: types.GameTypeKind
-  gameConfig: types.GameConfigFields
-  guess: number
-  result: number
-  requestSlot: BN
-  requestTimestamp: BN
-  settleSlot: BN
-  settleTimestamp: BN
+  roundId: BN;
+  status: types.RoundStatusKind;
+  betAmount: BN;
+  gameType: types.GameTypeKind;
+  gameConfig: types.GameConfigFields;
+  guess: number;
+  result: number;
+  requestSlot: BN;
+  requestTimestamp: BN;
+  settleSlot: BN;
+  settleTimestamp: BN;
 }
 
 export interface RoundJSON {
-  roundId: string
-  status: types.RoundStatusJSON
-  betAmount: string
-  gameType: types.GameTypeJSON
-  gameConfig: types.GameConfigJSON
-  guess: number
-  result: number
-  requestSlot: string
-  requestTimestamp: string
-  settleSlot: string
-  settleTimestamp: string
+  roundId: string;
+  status: types.RoundStatusJSON;
+  betAmount: string;
+  gameType: types.GameTypeJSON;
+  gameConfig: types.GameConfigJSON;
+  guess: number;
+  result: number;
+  requestSlot: string;
+  requestTimestamp: string;
+  settleSlot: string;
+  settleTimestamp: string;
 }
 
 export class Round {
-  readonly roundId: BN
-  readonly status: types.RoundStatusKind
-  readonly betAmount: BN
-  readonly gameType: types.GameTypeKind
-  readonly gameConfig: types.GameConfig
-  readonly guess: number
-  readonly result: number
-  readonly requestSlot: BN
-  readonly requestTimestamp: BN
-  readonly settleSlot: BN
-  readonly settleTimestamp: BN
+  readonly roundId: BN;
+  readonly status: types.RoundStatusKind;
+  readonly betAmount: BN;
+  readonly gameType: types.GameTypeKind;
+  readonly gameConfig: types.GameConfig;
+  readonly guess: number;
+  readonly result: number;
+  readonly requestSlot: BN;
+  readonly requestTimestamp: BN;
+  readonly settleSlot: BN;
+  readonly settleTimestamp: BN;
 
   constructor(fields: RoundFields) {
-    this.roundId = fields.roundId
-    this.status = fields.status
-    this.betAmount = fields.betAmount
-    this.gameType = fields.gameType
-    this.gameConfig = new types.GameConfig({ ...fields.gameConfig })
-    this.guess = fields.guess
-    this.result = fields.result
-    this.requestSlot = fields.requestSlot
-    this.requestTimestamp = fields.requestTimestamp
-    this.settleSlot = fields.settleSlot
-    this.settleTimestamp = fields.settleTimestamp
+    this.roundId = fields.roundId;
+    this.status = fields.status;
+    this.betAmount = fields.betAmount;
+    this.gameType = fields.gameType;
+    this.gameConfig = new types.GameConfig({ ...fields.gameConfig });
+    this.guess = fields.guess;
+    this.result = fields.result;
+    this.requestSlot = fields.requestSlot;
+    this.requestTimestamp = fields.requestTimestamp;
+    this.settleSlot = fields.settleSlot;
+    this.settleTimestamp = fields.settleTimestamp;
   }
 
   static layout(property?: string) {
@@ -74,7 +74,7 @@ export class Round {
         borsh.i64("settleTimestamp"),
       ],
       property
-    )
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,7 +91,7 @@ export class Round {
       requestTimestamp: obj.requestTimestamp,
       settleSlot: obj.settleSlot,
       settleTimestamp: obj.settleTimestamp,
-    })
+    });
   }
 
   static toEncodable(fields: RoundFields) {
@@ -107,7 +107,7 @@ export class Round {
       requestTimestamp: fields.requestTimestamp,
       settleSlot: fields.settleSlot,
       settleTimestamp: fields.settleTimestamp,
-    }
+    };
   }
 
   toJSON(): RoundJSON {
@@ -123,7 +123,7 @@ export class Round {
       requestTimestamp: this.requestTimestamp.toString(),
       settleSlot: this.settleSlot.toString(),
       settleTimestamp: this.settleTimestamp.toString(),
-    }
+    };
   }
 
   static fromJSON(obj: RoundJSON): Round {
@@ -139,10 +139,10 @@ export class Round {
       requestTimestamp: new BN(obj.requestTimestamp),
       settleSlot: new BN(obj.settleSlot),
       settleTimestamp: new BN(obj.settleTimestamp),
-    })
+    });
   }
 
   toEncodable() {
-    return Round.toEncodable(this)
+    return Round.toEncodable(this);
   }
 }

@@ -12,9 +12,8 @@ Cargo.lock
 *-keypair.json
 *-secret.json
 
-.switchboard
-start-local-validator.sh
-start-oracle.sh
-switchboard.env
-switchboard.json
-docker-compose.switchboard.yml
+# Switchboard
+**/.switchboard/*
+!**/.switchboard/networks/
+**/.switchboard/networks/*
+!**/.switchboard/networks/*.config.json

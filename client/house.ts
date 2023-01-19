@@ -1,18 +1,22 @@
 import * as anchor from "@project-serum/anchor";
-import * as spl from "@solana/spl-token";
 import {
-  PublicKey,
-  Signer,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
-import { sleep } from "@switchboard-xyz/sbv2-utils";
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  createInitializeMintInstruction,
+  createMintToInstruction,
+  getMint,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import { Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { sleep } from "@switchboard-xyz/common";
 import {
-  OracleQueueAccount,
-  programWallet,
-} from "@switchboard-xyz/switchboard-v2";
+  Mint,
+  QueueAccount,
+  SwitchboardProgram,
+  TransactionObject,
+} from "@switchboard-xyz/solana.js";
 import { HouseState, HouseStateJSON } from "./generated/accounts";
-import { FlipProgram } from "./types";
+import { houseInit } from "./generated/instructions";
 
 export class HouseAccountDoesNotExist extends Error {
   readonly name = "HouseAccountDoesNotExist";
@@ -28,20 +32,20 @@ export interface HouseJSON extends HouseStateJSON {
 }
 
 export class House {
-  program: FlipProgram;
-  publicKey: PublicKey;
   state: HouseState;
 
-  constructor(program: FlipProgram, publicKey: PublicKey, state: HouseState) {
-    this.program = program;
-    this.publicKey = publicKey;
+  constructor(
+    readonly program: anchor.Program,
+    readonly publicKey: PublicKey,
+    state: HouseState
+  ) {
     this.state = state;
   }
 
-  static fromSeeds(program: FlipProgram): [PublicKey, number] {
+  static fromSeeds(programId: PublicKey): [PublicKey, number] {
     return anchor.utils.publicKey.findProgramAddressSync(
       [Buffer.from("HOUSESTATESEED")],
-      program.programId
+      programId
     );
   }
 
@@ -63,34 +67,37 @@ export class House {
     };
   }
 
-  getQueueAccount(switchboardProgram: anchor.Program): OracleQueueAccount {
-    const queueAccount = new OracleQueueAccount({
-      program: switchboardProgram as any,
-      publicKey: this.state.switchboardQueue,
-    });
+  getQueueAccount(switchboardProgram: SwitchboardProgram): QueueAccount {
+    const queueAccount = new QueueAccount(
+      switchboardProgram,
+      this.state.switchboardQueue
+    );
     return queueAccount;
   }
 
   static async create(
-    program: FlipProgram,
-    switchboardQueue: OracleQueueAccount,
-    mintKeypair = anchor.web3.Keypair.generate()
+    program: anchor.Program,
+    switchboardQueue: QueueAccount,
+    mint: Keypair = anchor.web3.Keypair.generate()
   ): Promise<House> {
-    const req = await House.createReq(program, switchboardQueue, mintKeypair);
-
-    const signature = await program.provider.sendAndConfirm!(
-      new Transaction().add(...req.ixns),
-      req.signers
+    const [initHouse, houseKey] = await House.createReq(
+      program,
+      switchboardQueue,
+      mint
     );
+
+    const signature = await switchboardQueue.program.signAndSend(initHouse, {
+      skipPreflight: true,
+    });
 
     let retryCount = 5;
     while (retryCount) {
       const houseState = await HouseState.fetch(
         program.provider.connection,
-        req.account
+        houseKey
       );
       if (houseState !== null) {
-        return new House(program, req.account, houseState);
+        return new House(program, houseKey, houseState);
       }
       await sleep(1000);
       --retryCount;
@@ -100,55 +107,44 @@ export class House {
   }
 
   static async createReq(
-    program: FlipProgram,
-    switchboardQueue: OracleQueueAccount,
-    mintKeypair = anchor.web3.Keypair.generate()
-  ): Promise<{
-    ixns: TransactionInstruction[];
-    signers: Signer[];
-    account: PublicKey;
-  }> {
-    const payer = programWallet(program as any);
-    const [houseKey, houseBump] = House.fromSeeds(program);
+    program: anchor.Program,
+    switchboardQueue: QueueAccount,
+    mint: Keypair = anchor.web3.Keypair.generate()
+  ): Promise<[TransactionObject, PublicKey]> {
+    const payer = switchboardQueue.program.walletPubkey;
 
-    const switchboardMint = await switchboardQueue.loadMint();
+    const [houseKey, houseBump] = House.fromSeeds(program.programId);
 
-    const tokenVault = await spl.getAssociatedTokenAddress(
-      mintKeypair.publicKey,
-      houseKey,
-      true
+    const mintPubkey: PublicKey = mint.publicKey;
+
+    const [tokenVault] = anchor.utils.publicKey.findProgramAddressSync(
+      [houseKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintPubkey.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
-    const txnIxns: TransactionInstruction[] = [
-      await program.methods
-        .houseInit({})
-        .accounts({
-          house: houseKey,
-          authority: payer.publicKey,
-          switchboardMint: switchboardMint.address,
-          switchboardQueue: switchboardQueue.publicKey,
-          mint: mintKeypair.publicKey,
-          houseVault: tokenVault,
-          payer: payer.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: spl.TOKEN_PROGRAM_ID,
-          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        })
-        .instruction(),
-    ];
+    const initHouse = houseInit(
+      { params: {} },
+      {
+        house: houseKey,
+        authority: payer,
+        switchboardMint: switchboardQueue.program.mint.address,
+        switchboardQueue: switchboardQueue.publicKey,
+        mint: mintPubkey,
+        houseVault: tokenVault,
+        payer: payer,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      }
+    );
 
-    return {
-      ixns: txnIxns,
-      signers: [mintKeypair],
-      account: houseKey,
-    };
+    return [new TransactionObject(payer, [initHouse], [mint]), houseKey];
   }
 
-  static async load(program: FlipProgram): Promise<House> {
+  static async load(program: anchor.Program): Promise<House> {
     const connection = program.provider.connection;
-    const [houseKey, houseBump] = House.fromSeeds(program);
-    const payer = programWallet(program as any);
+    const [houseKey, houseBump] = House.fromSeeds(program.programId);
 
     let houseState = await HouseState.fetch(connection, houseKey);
     if (houseState !== null) {
@@ -159,8 +155,9 @@ export class House {
   }
 
   static async getOrCreate(
-    program: FlipProgram,
-    switchboardQueue: OracleQueueAccount
+    program: anchor.Program,
+    switchboardQueue: QueueAccount,
+    mint?: Keypair
   ): Promise<House> {
     try {
       const house = await House.load(program);
@@ -173,12 +170,12 @@ export class House {
       }
     }
 
-    return House.create(program, switchboardQueue);
+    return House.create(program, switchboardQueue, mint ?? Keypair.generate());
   }
 
-  async loadMint(): Promise<spl.Mint> {
-    const mint = await spl.getMint(
-      this.program.provider.connection,
+  async loadMint(): Promise<Mint> {
+    const mint = await Mint.load(
+      this.program.provider as anchor.AnchorProvider,
       this.state.mint
     );
     return mint;

@@ -26,12 +26,7 @@ pub struct UserInit<'info> {
         has_one = mint
     )]
     pub house: AccountLoader<'info, HouseState>,
-    #[account(
-        mut,
-        mint::decimals = 9,
-        mint::authority = house,
-        mint::freeze_authority = house,
-    )]
+    #[account(mut)]
     pub mint: Account<'info, Mint>,
     /// CHECK:
     #[account(mut, signer)]
@@ -51,8 +46,8 @@ pub struct UserInit<'info> {
     )]
     pub reward_address: Account<'info, TokenAccount>,
     /// CHECK:
-    #[account(mut,
-        owner = SWITCHBOARD_PROGRAM_ID @ VrfFlipError::InvalidSwitchboardAccount,
+    #[account(
+        mut,
         constraint = 
             vrf.load()?.authority == user.key() &&
             vrf.load()?.oracle_queue == house.load()?.switchboard_queue @ VrfFlipError::OracleQueueMismatch
@@ -158,19 +153,23 @@ impl UserInit<'_> {
             None,
         )?;
 
-        msg!("minting 10 tokens to users token wallet");
-        token::mint_to(
-            CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info().clone(),
-                MintTo {
-                    mint: ctx.accounts.mint.to_account_info().clone(),
-                    authority: ctx.accounts.house.to_account_info().clone(),
-                    to: ctx.accounts.reward_address.to_account_info().clone(),
-                },
-                house_seeds,
-            ),
-            10 * 1_000_000_000,
-        )?;
+        if ctx.accounts.mint.mint_authority.is_some()
+            && ctx.accounts.mint.mint_authority.unwrap() == ctx.accounts.house.key()
+        {
+            msg!("minting 10 tokens to users token wallet");
+            token::mint_to(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info().clone(),
+                    MintTo {
+                        mint: ctx.accounts.mint.to_account_info().clone(),
+                        authority: ctx.accounts.house.to_account_info().clone(),
+                        to: ctx.accounts.reward_address.to_account_info().clone(),
+                    },
+                    house_seeds,
+                ),
+                10 * 1_000_000_000,
+            )?;
+        }
 
         Ok(())
     }

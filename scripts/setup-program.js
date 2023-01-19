@@ -20,12 +20,6 @@ const targetDir = path.join(projectRoot, "target");
 const idlDir = path.join(targetDir, "idl");
 const anchorToml = path.join(projectRoot, "Anchor.toml");
 
-const anchorClientGen = path.join(
-  projectRoot,
-  "node_modules",
-  ".bin",
-  "anchor-client-gen"
-);
 const shx = path.join(projectRoot, "node_modules", ".bin", "shx");
 
 const switchboardVrfKeypairPath = path.join(
@@ -89,7 +83,7 @@ async function main() {
   shell.rm("-rf", vrfClientPath);
   fs.mkdirSync(vrfClientPath, { recursive: true });
   execSync(
-    `node ${anchorClientGen} ${path.join(
+    `npx anchor-client-gen ${path.join(
       idlDir,
       "switchboard_vrf_flip.json"
     )} ${vrfClientPath} --program-id ${switchboardVrfFlipPid.toString()}`

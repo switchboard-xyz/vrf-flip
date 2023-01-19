@@ -1,14 +1,15 @@
 import { useConnectedWallet } from '@gokiprotocol/walletkit';
 import * as anchor from '@project-serum/anchor';
 import { ConnectedWallet } from '@saberhq/use-solana';
-import * as spl from '@solana/spl-token-v2';
+import * as spl from '@solana/spl-token';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import * as sbv2 from '@switchboard-xyz/switchboard-v2';
+import * as switchboard from '@switchboard-xyz/solana.js';
 import _ from 'lodash';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { hooks, Store, thunks } from '..';
 import * as api from '../../api';
+import { FlipProgram } from '../../api';
 import { ThunkDispatch } from '../../types';
 import { Severity } from '../../util/const';
 import { GameState } from '../store/gameStateReducer';
@@ -156,6 +157,7 @@ class ApiState implements PrivateApiInterface {
 
     return api
       .getFlipProgram(this.rpc)
+      .then((program) => FlipProgram.load(program))
       .then(
         (program) =>
           (this._program ??= (() => {
@@ -242,7 +244,6 @@ class ApiState implements PrivateApiInterface {
     // Gather necessary programs.
     const program = await this.program;
     const anchorProvider = new anchor.AnchorProvider(program.provider.connection, this.wallet, {});
-    const switchboard = await api.loadSwitchboard(anchorProvider);
 
     this.log(`Checking if user needs airdrop...`);
     api.verifyPayerBalance(program.provider.connection, anchorProvider.publicKey);
@@ -251,8 +252,8 @@ class ApiState implements PrivateApiInterface {
     this.log(`Building user accounts...`);
 
     // Build out and sign transactions.
-    const request = await api.User.createReq(program, switchboard, anchorProvider.publicKey);
-    await this.packSignAndSubmit(request.ixns, request.signers);
+    const request = await api.User.createReq(program, anchorProvider.wallet.publicKey);
+    await this.packSignAndSubmit(request[0]);
 
     // Try to load the new user accounts.
     await this.user;
@@ -268,7 +269,7 @@ class ApiState implements PrivateApiInterface {
     // Build out and sign transactions.
     this.log(`Building airdrop request...`);
     const request = await user.airdropReq(this.wallet.publicKey);
-    await this.packSignAndSubmit(request.ixns, request.signers);
+    await this.packSignAndSubmit([request]);
 
     await this.playPrompt();
   };
@@ -299,25 +300,27 @@ class ApiState implements PrivateApiInterface {
       this.gameMode,
       guess,
       new anchor.BN(bet).mul(new anchor.BN(RIBS_PER_RACK)),
-      /* switchboardTokenAccount= */ undefined,
       this.wallet.publicKey
     );
-    await this.packSignAndSubmit(request.ixns, request.signers);
+    await this.packSignAndSubmit([request]);
   };
 
-  private packSignAndSubmit = async (ixns: anchor.web3.TransactionInstruction[], signers: anchor.web3.Signer[]) => {
+  private packSignAndSubmit = async (transactions: switchboard.TransactionObject[]) => {
     const program = await this.program;
-    const packed = await sbv2.packTransactions(
-      program.provider.connection,
-      [new anchor.web3.Transaction().add(...ixns)],
-      signers as anchor.web3.Keypair[],
-      this.wallet.publicKey
-    );
+    const packed = switchboard.TransactionObject.pack(transactions);
 
     // Sign transactions.
     this.log(`Requesting user signature...`);
+
+    const latestBlockhash = await program.provider.connection.getLatestBlockhash('confirmed');
     const signed = await this.wallet
-      .signAllTransactions(packed)
+      .signAllTransactions(
+        packed.map((object) => {
+          const txn = object.toTxn(latestBlockhash);
+          if (object.signers.length) txn.partialSign(...object.signers);
+          return txn;
+        })
+      )
       .then((signed) => {
         this.log(`Awaiting network confirmation...`);
         return signed;
