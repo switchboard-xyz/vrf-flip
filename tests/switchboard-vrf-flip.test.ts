@@ -54,7 +54,7 @@ describe("switchboard-vrf-flip", () => {
     console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
     console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
 
-    await switchboard.start("dev-v2-RC_01_18_23_21_48-beta", undefined);
+    await switchboard.start("dev-v2-RC_01_24_23_20_38", undefined);
   });
 
   after(async () => {

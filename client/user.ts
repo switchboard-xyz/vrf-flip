@@ -383,7 +383,7 @@ export class User {
     const result = await promiseWithTimeout(
       timeout * 1000,
       awaitUpdatePromise,
-      new Error(`flip user failed to update in ${timeout} seconds`)
+      `flip user failed to update in ${timeout} seconds`
     ).finally(() => {
       if (accountWs) {
         this.program.provider.connection.removeAccountChangeListener(accountWs);
