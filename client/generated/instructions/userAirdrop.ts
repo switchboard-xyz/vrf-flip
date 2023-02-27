@@ -1,12 +1,12 @@
+import { FlipProgram } from "../../program";
 import {
   TransactionInstruction,
   PublicKey,
   AccountMeta,
 } from "@solana/web3.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import BN from "bn.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as borsh from "@project-serum/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as borsh from "@coral-xyz/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import * as types from "../types"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import { PROGRAM_ID } from "../programId";
 
 export interface UserAirdropArgs {
   params: types.UserAirdropParamsFields;
@@ -25,6 +25,7 @@ export interface UserAirdropAccounts {
 export const layout = borsh.struct([types.UserAirdropParams.layout("params")]);
 
 export function userAirdrop(
+  program: { programId: PublicKey },
   args: UserAirdropArgs,
   accounts: UserAirdropAccounts
 ) {
@@ -46,6 +47,10 @@ export function userAirdrop(
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({ keys, programId: PROGRAM_ID, data });
+  const ix = new TransactionInstruction({
+    keys,
+    programId: program.programId,
+    data,
+  });
   return ix;
 }

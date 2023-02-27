@@ -1,5 +1,5 @@
 import { useConnectedWallet } from '@gokiprotocol/walletkit';
-import * as anchor from '@project-serum/anchor';
+import * as anchor from '@coral-xyz/anchor';
 import { ConnectedWallet } from '@saberhq/use-solana';
 import * as spl from '@solana/spl-token';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';

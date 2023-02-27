@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
 import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
 import { FlipProgram, GameTypeValue, House, User } from "../client";
 import { createFlipUser, FlipUser } from "../client/utils";
@@ -54,7 +54,7 @@ describe("switchboard-vrf-flip", () => {
     console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
     console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
 
-    await switchboard.start("dev-v2-RC_01_24_23_20_38", undefined);
+    await switchboard.start();
   });
 
   after(async () => {

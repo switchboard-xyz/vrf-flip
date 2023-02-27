@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import {
   Cluster,
   Connection,
@@ -78,7 +78,10 @@ export class FlipProgram {
 
     const [houseKey] = House.fromSeeds(program.programId);
     const houseState = await HouseState.fetch(
-      program.provider.connection,
+      {
+        connection: program.provider.connection,
+        programId: program.programId,
+      },
       houseKey
     );
 

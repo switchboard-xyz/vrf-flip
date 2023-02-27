@@ -1,3 +1,4 @@
+import { FlipProgram } from "../../program";
 export type AnchorError =
   | InstructionMissing
   | InstructionFallbackNotFound

@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import { createWrappedNativeAccount } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import {

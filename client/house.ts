@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
@@ -51,7 +51,10 @@ export class House {
 
   async reload(): Promise<void> {
     const newState = await HouseState.fetch(
-      this.program.provider.connection,
+      {
+        connection: this.program.provider.connection,
+        programId: this.program.programId,
+      },
       this.publicKey
     );
     if (newState === null) {
@@ -93,7 +96,10 @@ export class House {
     let retryCount = 5;
     while (retryCount) {
       const houseState = await HouseState.fetch(
-        program.provider.connection,
+        {
+          connection: program.provider.connection,
+          programId: program.programId,
+        },
         houseKey
       );
       if (houseState !== null) {
@@ -123,6 +129,9 @@ export class House {
     );
 
     const initHouse = houseInit(
+      {
+        programId: program.programId,
+      },
       { params: {} },
       {
         house: houseKey,
@@ -146,7 +155,13 @@ export class House {
     const connection = program.provider.connection;
     const [houseKey, houseBump] = House.fromSeeds(program.programId);
 
-    let houseState = await HouseState.fetch(connection, houseKey);
+    let houseState = await HouseState.fetch(
+      {
+        connection: program.provider.connection,
+        programId: program.programId,
+      },
+      houseKey
+    );
     if (houseState !== null) {
       return new House(program, houseKey, houseState);
     }
