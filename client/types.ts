@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 // import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
 // export * from "../target/types/switchboard_vrf_flip";
 

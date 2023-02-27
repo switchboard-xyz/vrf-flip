@@ -1,8 +1,8 @@
+import { FlipProgram } from "../../program";
 import { PublicKey, Connection } from "@solana/web3.js";
 import BN from "bn.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as borsh from "@project-serum/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as borsh from "@coral-xyz/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import * as types from "../types"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import { PROGRAM_ID } from "../programId";
 
 export interface UserStateFields {
   bump: number;
@@ -83,15 +83,15 @@ export class UserState {
   }
 
   static async fetch(
-    c: Connection,
+    program: { connection: Connection; programId: PublicKey },
     address: PublicKey
   ): Promise<UserState | null> {
-    const info = await c.getAccountInfo(address);
+    const info = await program.connection.getAccountInfo(address);
 
     if (info === null) {
       return null;
     }
-    if (!info.owner.equals(PROGRAM_ID)) {
+    if (!info.owner.equals(program.programId)) {
       throw new Error("account doesn't belong to this program");
     }
 
@@ -99,16 +99,16 @@ export class UserState {
   }
 
   static async fetchMultiple(
-    c: Connection,
+    program: { connection: Connection; programId: PublicKey },
     addresses: PublicKey[]
   ): Promise<Array<UserState | null>> {
-    const infos = await c.getMultipleAccountsInfo(addresses);
+    const infos = await program.connection.getMultipleAccountsInfo(addresses);
 
     return infos.map((info) => {
       if (info === null) {
         return null;
       }
-      if (!info.owner.equals(PROGRAM_ID)) {
+      if (!info.owner.equals(program.programId)) {
         throw new Error("account doesn't belong to this program");
       }
 

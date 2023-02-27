@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-loop-func */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-var-requires */
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as spl from "@solana/spl-token";
 import {
   Connection,

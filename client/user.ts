@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as spl from "@solana/spl-token";
 import {
   LAMPORTS_PER_SOL,
@@ -68,10 +68,7 @@ export class User {
   static async load(program: FlipProgram, authority: PublicKey): Promise<User> {
     const [houseKey] = House.fromSeeds(program.programId);
     const [userKey] = User.fromSeeds(program, authority);
-    const userState = await UserState.fetch(
-      program.provider.connection,
-      userKey
-    );
+    const userState = await UserState.fetch(program, userKey);
     if (!userState) {
       throw new Error(`User account does not exist`);
     }
@@ -111,10 +108,7 @@ export class User {
   }
 
   async reload(): Promise<void> {
-    const newState = await UserState.fetch(
-      this.program.provider.connection,
-      this.publicKey
-    );
+    const newState = await UserState.fetch(this.program, this.publicKey);
     if (newState === null) {
       throw new Error(`Failed to fetch the new User account state`);
     }
@@ -193,10 +187,7 @@ export class User {
 
     let retryCount = 5;
     while (retryCount) {
-      const userState = await UserState.fetch(
-        program.provider.connection,
-        userKey
-      );
+      const userState = await UserState.fetch(program, userKey);
       if (userState !== null) {
         return new User(program, userKey, userState);
       }
@@ -257,6 +248,7 @@ export class User {
       payerPubkey,
       [
         userInit(
+          program,
           {
             params: {
               switchboardStateBump: program.switchboard.programState.bump,
@@ -322,6 +314,7 @@ export class User {
       );
 
     const betIxn = userBet(
+      this.program,
       {
         params: {
           gameType: gameType,
@@ -445,6 +438,7 @@ export class User {
     );
 
     const airdropIxn = userAirdrop(
+      this.program,
       { params: {} },
       {
         user: this.publicKey,

@@ -11,7 +11,7 @@
       "@switchboard-xyz/switchboard-v2": [
         "./node_modules/@switchboard-xyz/switchboard-v2"
       ],
-      "@project-serum/anchor": ["./node_modules/@project-serum/anchor"]
+      "@coral-xyz/anchor": ["./node_modules/@coral-xyz/anchor"]
     }
   }
 }

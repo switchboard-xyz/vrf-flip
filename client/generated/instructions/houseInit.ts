@@ -1,12 +1,12 @@
+import { FlipProgram } from "../../program";
 import {
   TransactionInstruction,
   PublicKey,
   AccountMeta,
 } from "@solana/web3.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import BN from "bn.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as borsh from "@project-serum/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as borsh from "@coral-xyz/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import * as types from "../types"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import { PROGRAM_ID } from "../programId";
 
 export interface HouseInitArgs {
   params: types.HouseInitParamsFields;
@@ -28,7 +28,11 @@ export interface HouseInitAccounts {
 
 export const layout = borsh.struct([types.HouseInitParams.layout("params")]);
 
-export function houseInit(args: HouseInitArgs, accounts: HouseInitAccounts) {
+export function houseInit(
+  program: { programId: PublicKey },
+  args: HouseInitArgs,
+  accounts: HouseInitAccounts
+) {
   const keys: Array<AccountMeta> = [
     { pubkey: accounts.house, isSigner: false, isWritable: true },
     { pubkey: accounts.authority, isSigner: true, isWritable: true },
@@ -55,6 +59,10 @@ export function houseInit(args: HouseInitArgs, accounts: HouseInitAccounts) {
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({ keys, programId: PROGRAM_ID, data });
+  const ix = new TransactionInstruction({
+    keys,
+    programId: program.programId,
+    data,
+  });
   return ix;
 }

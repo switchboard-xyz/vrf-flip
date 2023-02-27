@@ -1,12 +1,12 @@
+import { FlipProgram } from "../../program";
 import {
   TransactionInstruction,
   PublicKey,
   AccountMeta,
 } from "@solana/web3.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import BN from "bn.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import * as borsh from "@project-serum/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import * as borsh from "@coral-xyz/borsh"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import * as types from "../types"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import { PROGRAM_ID } from "../programId";
 
 export interface UserBetArgs {
   params: types.UserBetParamsFields;
@@ -19,12 +19,9 @@ export interface UserBetAccounts {
   authority: PublicKey;
   escrow: PublicKey;
   vrf: PublicKey;
-  /** CHECK */
   oracleQueue: PublicKey;
   queueAuthority: PublicKey;
-  /** CHECK */
   dataBuffer: PublicKey;
-  /** CHECK */
   permission: PublicKey;
   vrfEscrow: PublicKey;
   switchboardProgramState: PublicKey;
@@ -39,7 +36,11 @@ export interface UserBetAccounts {
 
 export const layout = borsh.struct([types.UserBetParams.layout("params")]);
 
-export function userBet(args: UserBetArgs, accounts: UserBetAccounts) {
+export function userBet(
+  program: { programId: PublicKey },
+  args: UserBetArgs,
+  accounts: UserBetAccounts
+) {
   const keys: Array<AccountMeta> = [
     { pubkey: accounts.user, isSigner: false, isWritable: true },
     { pubkey: accounts.house, isSigner: false, isWritable: false },
@@ -74,6 +75,10 @@ export function userBet(args: UserBetArgs, accounts: UserBetAccounts) {
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({ keys, programId: PROGRAM_ID, data });
+  const ix = new TransactionInstruction({
+    keys,
+    programId: program.programId,
+    data,
+  });
   return ix;
 }
