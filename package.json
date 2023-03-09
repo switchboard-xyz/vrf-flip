@@ -28,7 +28,7 @@
     "@solana/spl-token": "^0.3.6",
     "@solana/web3.js": "^1.73.3",
     "@switchboard-xyz/common": "^2.1.31",
-    "@switchboard-xyz/solana.js": "^2.0.128",
+    "@switchboard-xyz/solana.js": "2.0.135",
     "chalk": "4"
   },
   "devDependencies": {

@@ -11,7 +11,6 @@ import { PROGRAM_ID_CLI } from "./generated/programId";
 import { FlipProgram } from "./program";
 import { User } from "./user";
 import path from "path";
-import fs from "fs";
 import os from "os";
 
 const DEFAULT_COMMITMENT = "confirmed";
@@ -172,6 +171,8 @@ export const verifyPayerBalance = async (
 };
 
 export function findAnchorTomlWallet(workingDir = process.cwd()): string {
+  const fs = require("fs");
+
   let numDirs = 3;
   while (numDirs) {
     const filePath = path.join(workingDir, "Anchor.toml");
