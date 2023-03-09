@@ -1760,7 +1760,7 @@ checksum = "ab16ced94dbd8a46c82fd81e3ed9a8727dac2977ea869d217bcc4ea1f122e81f"
 
 [[package]]
 name = "switchboard-v2"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "anchor-lang",
  "anchor-spl",

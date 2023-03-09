@@ -178,7 +178,7 @@ export function findAnchorTomlWallet(workingDir = process.cwd()): string {
     const filePath = path.join(workingDir, "Anchor.toml");
     if (fs.existsSync(filePath)) {
       const fileString = fs.readFileSync(filePath, "utf-8");
-      const matches = Array.from(
+      const matches: Array<any> = Array.from(
         fileString.matchAll(new RegExp(/wallet = "(?<wallet_path>.*)"/g))
       );
       if (matches && matches.length > 0 && matches[0].groups["wallet_path"]) {
