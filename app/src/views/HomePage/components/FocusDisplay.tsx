@@ -1,10 +1,13 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
+import { Store } from '../../../data';
 import { colorForSeverity } from '../../../util';
 import { Severity } from '../../../util/const';
 import css from '../../../util/css';
 
 const FocusDisplay: React.FC = () => {
   const [tabHasFocus, setTabHasFocus] = React.useState(true);
+  const cluster = useSelector((store: Store) => store.gameState.cluster);
 
   const handleFocus = React.useCallback(() => setTabHasFocus(true), []);
   const handleBlur = React.useCallback(() => setTabHasFocus(false), []);
@@ -19,7 +22,6 @@ const FocusDisplay: React.FC = () => {
     };
   }, [handleBlur, handleFocus]);
 
-  if (tabHasFocus) return null;
   return (
     <div
       style={{
@@ -29,10 +31,11 @@ const FocusDisplay: React.FC = () => {
         top: 0,
         left: 0,
         marginTop: '16px',
-        color: colorForSeverity(Severity.Error),
       }}
     >
-      <strong>Window needs focus.</strong>
+      Playing on <strong style={{ color: colorForSeverity(Severity.Success) }}>{cluster}</strong>.
+      <br />
+      {!tabHasFocus && <strong style={{ color: colorForSeverity(Severity.Error) }}>Window needs focus.</strong>}
     </div>
   );
 };

@@ -19,12 +19,13 @@ import { GameState } from '../store/gameStateReducer';
  */
 const RIBS_PER_RACK = 1000000000;
 
-type Cluster = 'devnet';
+export type Cluster = 'devnet' | 'mainnet-beta';
 
 enum ApiCommands {
   UserAirdrop = 'user airdrop',
   UserCreate = 'user create',
   UserPlay = 'user play',
+  NetworkSet = 'network set',
 }
 
 const games: { [type: number]: { type: api.GameTypeEnum; prompt: string; minGuess: number; maxGuess: number } } = {
@@ -55,6 +56,7 @@ enum ApiErrorType {
   UserAccountMissing,
   SendTransactionError,
   WalletSignature,
+  UnknownCluster,
   UnknownCommand,
   UnknownGameType,
   BadGuess,
@@ -63,7 +65,8 @@ enum ApiErrorType {
 
 class ApiError extends Error {
   static general = (message: string) => new ApiError(ApiErrorType.General, message);
-  static getFlipProgram = () => new ApiError(ApiErrorType.GetFlipProgram, `Couldn't get FlipProgram from the network.`);
+  static getFlipProgram = (cluster: Cluster) =>
+    new ApiError(ApiErrorType.GetFlipProgram, `Couldn't get FlipProgram from the network (${cluster}).`);
   static userAccountMissing = () =>
     new ApiError(
       ApiErrorType.UserAccountMissing,
@@ -73,6 +76,8 @@ class ApiError extends Error {
   static unknownCommand = (command: string) =>
     new ApiError(ApiErrorType.UnknownCommand, `Unknown command '${command}'`);
   static unknownGameType = () => new ApiError(ApiErrorType.UnknownGameType, `Unknown game type.`);
+  static unknownCluster = () =>
+    new ApiError(ApiErrorType.UnknownCluster, `Cluster must be set to 'devnet' or 'mainnet-beta'.`);
   static anchorError = (error: anchor.AnchorError) =>
     new ApiError(
       ApiErrorType.AnchorError,
@@ -95,7 +100,7 @@ class ApiError extends Error {
 
 interface ApiInterface {
   /**
-   * Handle command input from the user.
+   *  Handle command input from the user.
    */
   readonly handleCommand: (command: string) => Promise<void>;
 }
@@ -107,16 +112,14 @@ interface PrivateApiInterface extends ApiInterface {
 class ApiState implements PrivateApiInterface {
   private readonly dispatch: ThunkDispatch;
   private readonly wallet: ConnectedWallet;
-  private readonly cluster: Cluster;
   private readonly accountChangeListeners: number[] = [];
-  private _program?: api.FlipProgram;
+  private _program: { [key in Cluster]?: api.FlipProgram } = {};
   private _user?: api.User;
   private _gameState?: GameState;
 
   constructor(wallet: ConnectedWallet, dispatch: ThunkDispatch) {
     this.wallet = wallet;
     this.dispatch = dispatch;
-    this.cluster = 'devnet';
 
     // Upon instantiation of this object, try to fetch user account and balance asynchronously.
     this.user.catch((e) => this.handleError(e));
@@ -124,11 +127,15 @@ class ApiState implements PrivateApiInterface {
     this.log(`Connected as ${wallet.publicKey}`, Severity.Success);
   }
 
+  private get cluster(): Cluster {
+    return this._gameState?.cluster ?? 'devnet';
+  }
+
   /**
    * The rpc endpoint to be used.
    */
   get rpc(): string {
-    // @TODO make rpc connection configurable.
+    // @TODO: make rpc connection configurable.
     return api.defaultRpcForCluster(this.cluster);
   }
 
@@ -153,22 +160,27 @@ class ApiState implements PrivateApiInterface {
    */
   get program(): Promise<api.FlipProgram> {
     // If the program has already been set, return it.
-    if (this._program) return Promise.resolve(this._program);
+    const cluster = this.cluster;
+    const cached = this._program[cluster];
+    if (cached) return Promise.resolve(cached);
 
     return api
       .getFlipProgram(this.rpc)
       .then((program) => FlipProgram.load(program))
-      .then(
-        (program) =>
-          (this._program ??= (() => {
+      .then((program) => {
+        return (
+          this._program[cluster] ??
+          (() => {
             // If there is not yet a known program, set it, log it, and return it.
-            this.log(`Program retrieved for cluster: ${this.cluster}`);
+            this.log(`Program retrieved for cluster: ${cluster}`);
+            this._program[cluster] = program;
             return program;
-          })())
-      )
+          })()
+        );
+      })
       .catch((e) => {
         console.error(e);
-        throw ApiError.getFlipProgram();
+        throw ApiError.getFlipProgram(cluster);
       });
   }
 
@@ -227,6 +239,9 @@ class ApiState implements PrivateApiInterface {
       else if (command.startsWith(ApiCommands.UserPlay))
         // Split the arguments and try to play the game.
         await this.playGame(command.replace(ApiCommands.UserPlay, '').trim().split(/\s+/));
+      else if (command.startsWith(ApiCommands.NetworkSet))
+        // Split the arguments and try to set the network.
+        await this.networkSet(command.replace(ApiCommands.NetworkSet, '').trim().split(/\s+/));
       else throw ApiError.unknownCommand(command);
     } catch (e) {
       this.handleError(e);
@@ -274,6 +289,18 @@ class ApiState implements PrivateApiInterface {
     await this.playPrompt();
   };
 
+  private networkSet = async (args: string[]) => {
+    const cluster = args[0];
+    switch (cluster) {
+      case 'devnet':
+      case 'mainnet-beta':
+        this.dispatch(thunks.setCluster(cluster));
+        break;
+      default:
+        throw ApiError.unknownCluster();
+    }
+  };
+
   /**
    * Play the game.
    */
@@ -296,13 +323,13 @@ class ApiState implements PrivateApiInterface {
       throw ApiError.badBet();
 
     this.log(`Building bet request...`);
-    const request = await user.placeBetReq(
-      this.gameMode,
-      guess,
-      new anchor.BN(bet).mul(new anchor.BN(RIBS_PER_RACK)),
-      this.wallet.publicKey
-    );
-    await this.packSignAndSubmit([request]);
+    const request = await user
+      .placeBetReq(this.gameMode, guess, new anchor.BN(bet).mul(new anchor.BN(RIBS_PER_RACK)), this.wallet.publicKey)
+      .then((request) => this.packSignAndSubmit([request]))
+      .catch((error) => {
+        console.error(error);
+        throw ApiError.general('An error occurred... check the console logs for more information.');
+      });
   };
 
   private packSignAndSubmit = async (transactions: switchboard.TransactionObject[]) => {

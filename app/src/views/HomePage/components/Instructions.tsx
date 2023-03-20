@@ -3,10 +3,11 @@ import css from '../../../util/css';
 
 const content = `
 1) Connect your favorite SPL wallet.
-2) Create user accounts with \`user create\`.
-3) Airdrop with \`user airdrop\`.
-4) Play with \`user play <GUESS> <BET>\`.
-5) Win (or lose, but verifiably).
+2) Change cluster with \`network set\`.
+3) Create user accounts with \`user create\`.
+4) Airdrop with \`user airdrop\`.
+5) Play with \`user play <GUESS> <BET>\`.
+6) Win (or lose, but verifiably).
 `;
 
 const Instructions: React.FC = (props) => {

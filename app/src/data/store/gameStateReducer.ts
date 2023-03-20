@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import _ from 'lodash';
 import { GameTypeValue } from '../../api';
+import { Cluster } from '../providers/ApiProvider';
 
 interface Balances {
   sol?: number;
@@ -9,6 +10,7 @@ interface Balances {
 
 // Define a type for the slice state
 export interface GameState {
+  cluster: Cluster;
   /**
    * The latest known balance of the user's wallet.
    */
@@ -27,6 +29,7 @@ export interface GameState {
  * The initial {@linkcode GameState} to set in the data slice.
  */
 const initialState: GameState = {
+  cluster: 'devnet',
   loading: false,
   gameMode: GameTypeValue.COIN_FLIP,
   userBalances: {},
@@ -39,6 +42,9 @@ const gameStateSlice = createSlice({
   name: 'gameStateSlice',
   initialState: initialState,
   reducers: {
+    setCluster: (state: GameState, action: PayloadAction<Cluster>) => {
+      state.cluster = action.payload;
+    },
     setUserBalance: (state: GameState, action: PayloadAction<Balances | undefined>) => {
       if (action.payload) {
         // If ribs value changed, update.
@@ -54,5 +60,5 @@ const gameStateSlice = createSlice({
   },
 });
 
-export const { setUserBalance } = gameStateSlice.actions;
+export const { setCluster, setUserBalance } = gameStateSlice.actions;
 export default gameStateSlice.reducer;
