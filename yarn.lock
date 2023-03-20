@@ -9,12 +9,12 @@
   dependencies:
     regenerator-runtime "^0.13.11"
 
-"@coral-xyz/anchor@^0.27.0":
-  version "0.27.0"
-  resolved "https://registry.npmjs.org/@coral-xyz/anchor/-/anchor-0.27.0.tgz#621e5ef123d05811b97e49973b4ed7ede27c705c"
-  integrity sha512-+P/vPdORawvg3A9Wj02iquxb4T0C5m4P6aZBVYysKl4Amk+r6aMPZkUhilBkD6E4Nuxnoajv3CFykUfkGE0n5g==
+"@coral-xyz/anchor@^0.26.0":
+  version "0.26.0"
+  resolved "https://registry.npmjs.org/@coral-xyz/anchor/-/anchor-0.26.0.tgz#c8e4f7177e93441afd030f22d777d54d0194d7d1"
+  integrity sha512-PxRl+wu5YyptWiR9F2MBHOLLibm87Z4IMUBPreX+DYBtPM+xggvcPi0KAN7+kIL4IrIhXI8ma5V0MCXxSN1pHg==
   dependencies:
-    "@coral-xyz/borsh" "^0.27.0"
+    "@coral-xyz/borsh" "^0.26.0"
     "@solana/web3.js" "^1.68.0"
     base64-js "^1.5.1"
     bn.js "^5.1.2"
@@ -30,10 +30,10 @@
     superstruct "^0.15.4"
     toml "^3.0.0"
 
-"@coral-xyz/borsh@^0.27.0":
-  version "0.27.0"
-  resolved "https://registry.npmjs.org/@coral-xyz/borsh/-/borsh-0.27.0.tgz#700c647ea5262b1488957ac7fb4e8acf72c72b63"
-  integrity sha512-tJKzhLukghTWPLy+n8K8iJKgBq1yLT/AxaNd10yJrX8mI56ao5+OFAKAqW/h0i79KCvb4BK0VGO5ECmmolFz9A==
+"@coral-xyz/borsh@^0.26.0":
+  version "0.26.0"
+  resolved "https://registry.npmjs.org/@coral-xyz/borsh/-/borsh-0.26.0.tgz#d054f64536d824634969e74138f9f7c52bbbc0d5"
+  integrity sha512-uCZ0xus0CszQPHYfWAqKS5swS1UxvePu83oOF+TWpUkedsNlg6p2p4azxZNSSqwXb9uXMFgxhuMBX9r3Xoi0vQ==
   dependencies:
     bn.js "^5.1.2"
     buffer-layout "^1.2.0"
@@ -220,7 +220,7 @@
     protobufjs "^7.1.2"
     yaml "^2.2.1"
 
-"@switchboard-xyz/oracle@^2.1.13":
+"@switchboard-xyz/oracle@^2.1.11":
   version "2.1.13"
   resolved "https://registry.npmjs.org/@switchboard-xyz/oracle/-/oracle-2.1.13.tgz#19a7a03171e009bfeb0d0a94457037680316201c"
   integrity sha512-ehuoC6PLNnIaU9a52/ZSsqioK9So6AraJZO1gxPn8V4PXGDi03i3n8N1d+/r/oESXQ6DKwNp2JXLcyGlmzk3Qg==
@@ -230,17 +230,17 @@
     node-fetch "^2.6.9"
     xdg-basedir "^4.0.0"
 
-"@switchboard-xyz/solana.js@^2.1.1":
-  version "2.1.1"
-  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.1.1.tgz#f4a0c36523b9dc2ab1d93c8278e8c4cdb297e379"
-  integrity sha512-rfkriFRSZ6i5aH7rleJFo0iE5pu+9RrmE9YPP5eSVNvtib5RMYT4K2TvZf92nW8RUTrPQ11UkhHty5MqX2wM4A==
+"@switchboard-xyz/solana.js@2.0.135":
+  version "2.0.135"
+  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.0.135.tgz#2b78664b3d51f5a8595c7638bbee8bae05e27552"
+  integrity sha512-vNBSE4aLm9SjNhhXJ4QkePmoOW1TGmTXWcqnzZKUpI76Ztb/deCWEZSr5IXoBlhtJkZANorId4P3JCG6YvZKpA==
   dependencies:
-    "@coral-xyz/anchor" "^0.27.0"
-    "@coral-xyz/borsh" "^0.27.0"
+    "@coral-xyz/anchor" "^0.26.0"
+    "@coral-xyz/borsh" "^0.26.0"
     "@solana/spl-token" "^0.3.6"
     "@solana/web3.js" "^1.73.0"
     "@switchboard-xyz/common" "^2.1.33"
-    "@switchboard-xyz/oracle" "^2.1.13"
+    "@switchboard-xyz/oracle" "^2.1.11"
     dotenv "^16.0.3"
     lodash "^4.17.21"
 
