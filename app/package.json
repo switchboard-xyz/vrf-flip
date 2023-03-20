@@ -42,6 +42,7 @@
     "prebuild": "yarn prebuild:copy",
     "prebuild:copy": "shx rm -rf src/api/*; shx mkdir -p src/api; shx cp -r ../client/* src/api",
     "postinstall": "yarn prebuild",
+    "prestart": "yarn prebuild",
     "start": "vite --host --open",
     "build": "vite build",
     "preview": "vite preview",
