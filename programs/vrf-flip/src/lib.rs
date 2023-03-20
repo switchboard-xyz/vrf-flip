@@ -100,7 +100,7 @@ pub enum GameType {
 }
 
 #[repr(packed)]
-#[zero_copy]
+#[zero_copy(unsafe)]
 #[derive(PartialEq, Eq, Default)]
 pub struct GameConfig {
     // number of VRF requests to complete the game
@@ -128,7 +128,7 @@ impl Default for RoundStatus {
 }
 
 #[repr(packed)]
-#[zero_copy]
+#[zero_copy(unsafe)]
 #[derive(PartialEq, Eq, Default)]
 pub struct Round {
     pub round_id: u128,
@@ -149,7 +149,7 @@ unsafe impl Zeroable for Round {}
 const MAX_HISTORY: u32 = 48;
 
 #[repr(packed)]
-#[zero_copy]
+#[zero_copy(unsafe)]
 #[derive(PartialEq, Eq)]
 pub struct History {
     pub idx: u32,
@@ -170,7 +170,7 @@ unsafe impl Zeroable for History {}
 
 // Each user needs an account with its own VRF to play
 #[repr(packed)]
-#[account(zero_copy)]
+#[account(zero_copy(unsafe))]
 pub struct UserState {
     pub bump: u8,
     pub authority: Pubkey,

@@ -23,12 +23,12 @@
     "sbv2-vrf-flip": "./cli.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.26.0",
-    "@coral-xyz/borsh": "^0.26.0",
+    "@coral-xyz/anchor": "^0.27.0",
+    "@coral-xyz/borsh": "^0.27.0",
     "@solana/spl-token": "^0.3.6",
-    "@solana/web3.js": "^1.73.3",
-    "@switchboard-xyz/common": "^2.1.31",
-    "@switchboard-xyz/solana.js": "2.0.135",
+    "@solana/web3.js": "^1.74.0",
+    "@switchboard-xyz/common": "^2.1.33",
+    "@switchboard-xyz/solana.js": "^2.1.1",
     "chalk": "4"
   },
   "devDependencies": {

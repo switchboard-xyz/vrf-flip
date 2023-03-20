@@ -57,10 +57,8 @@ describe("switchboard-vrf-flip", () => {
     await switchboard.start();
   });
 
-  after(async () => {
-    if (switchboard) {
-      switchboard.stop();
-    }
+  after(() => {
+    switchboard?.stop();
   });
 
   it("initialize the house", async () => {

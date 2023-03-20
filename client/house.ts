@@ -43,7 +43,7 @@ export class House {
   }
 
   static fromSeeds(programId: PublicKey): [PublicKey, number] {
-    return anchor.utils.publicKey.findProgramAddressSync(
+    return PublicKey.findProgramAddressSync(
       [Buffer.from("HOUSESTATESEED")],
       programId
     );
@@ -123,7 +123,7 @@ export class House {
 
     const mintPubkey: PublicKey = mint.publicKey;
 
-    const [tokenVault] = anchor.utils.publicKey.findProgramAddressSync(
+    const [tokenVault] = PublicKey.findProgramAddressSync(
       [houseKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintPubkey.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID
     );

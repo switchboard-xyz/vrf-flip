@@ -97,7 +97,7 @@ export class User {
     program: FlipProgram,
     authority: PublicKey
   ): [PublicKey, number] {
-    return anchor.utils.publicKey.findProgramAddressSync(
+    return PublicKey.findProgramAddressSync(
       [
         Buffer.from("USERSTATESEED"),
         program.house.publicKey.toBytes(),
