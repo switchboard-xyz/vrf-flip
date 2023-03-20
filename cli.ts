@@ -65,7 +65,7 @@ yargs(hideBin(process.argv))
         .positional("queueKey", {
           type: "string",
           describe: "publicKey of the oracle queue to target for VRF requests",
-          default: "F8ce7MsckeZAbAGmxjJNetxYXQa9mKr9nnrC3qKubyYy",
+          default: "uPeRMdfPmrPqgRWSrjAnAkH78RqAhe5kXoW6vBYRqFX",
         })
         .positional("mintKeypair", {
           type: "string",

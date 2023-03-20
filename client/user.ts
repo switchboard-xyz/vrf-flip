@@ -99,7 +99,7 @@ export class User {
   ): [PublicKey, number] {
     return PublicKey.findProgramAddressSync(
       [
-        Buffer.from("USERSTATESEED"),
+        Buffer.from("USERSEED"),
         program.house.publicKey.toBytes(),
         authority.toBytes(),
       ],

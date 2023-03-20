@@ -31,8 +31,8 @@ use solana_security_txt::security_txt;
 
 declare_id!("FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC");
 
-const HOUSE_SEED: &[u8] = b"HOUSESTATESEED";
-const USER_SEED: &[u8] = b"USERSTATESEED";
+const HOUSE_SEED: &[u8] = b"HOUSESEED";
+const USER_SEED: &[u8] = b"USERSEED";
 
 const MAX_BET_AMOUNT: u64 = 1_000_000_000 * 100;
 
