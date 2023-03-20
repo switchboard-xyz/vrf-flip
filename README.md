@@ -37,7 +37,7 @@ solana-keygen new --no-bip39-passphrase --outfile house-authority-keypair.json
 Create the House account
 
 ```bash
-sbv2-vrf-flip init house-authority-keypair.json F8ce7MsckeZAbAGmxjJNetxYXQa9mKr9nnrC3qKubyYy
+sbv2-vrf-flip init house-authority-keypair.json uPeRMdfPmrPqgRWSrjAnAkH78RqAhe5kXoW6vBYRqFX
 # sbv2-vrf-flip init KEYPAIR QUEUEKEY
 ```
 
@@ -79,7 +79,7 @@ where,
 
 ```bash
 solana-keygen new --no-bip39-passphrase --outfile house-authority-keypair.json
-sbv2-vrf-flip init house-authority-keypair.json F8ce7MsckeZAbAGmxjJNetxYXQa9mKr9nnrC3qKubyYy
+sbv2-vrf-flip init house-authority-keypair.json uPeRMdfPmrPqgRWSrjAnAkH78RqAhe5kXoW6vBYRqFX
 solana-keygen new --no-bip39-passphrase --outfile user-keypair.json
 sbv2-vrf-flip create user-keypair.json
 sbv2-vrf-flip airdrop user-keypair.json

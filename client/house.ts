@@ -44,7 +44,7 @@ export class House {
 
   static fromSeeds(programId: PublicKey): [PublicKey, number] {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from("HOUSESTATESEED")],
+      [Buffer.from("HOUSESEED")],
       programId
     );
   }
