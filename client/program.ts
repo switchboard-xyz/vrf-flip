@@ -15,6 +15,7 @@ import {
   SendTransactionOptions,
   DEFAULT_SEND_TRANSACTION_OPTIONS,
   TransactionOptions,
+  SBV2_MAINNET_PID,
 } from "@switchboard-xyz/solana.js";
 import { HouseState } from "./generated/accounts";
 import { House } from "./house";
@@ -73,7 +74,8 @@ export class FlipProgram {
     }
   ): Promise<FlipProgram> {
     const switchboard = await SwitchboardProgram.fromProvider(
-      program.provider as anchor.AnchorProvider
+      program.provider as anchor.AnchorProvider,
+      SBV2_MAINNET_PID
     );
 
     const [houseKey] = House.fromSeeds(program.programId);

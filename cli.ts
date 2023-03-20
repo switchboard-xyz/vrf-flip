@@ -16,7 +16,11 @@ const yargs = require("yargs");
 const { hideBin } = require("yargs/helpers");
 // import yargs from "yargs";
 // import { hideBin } from "yargs/helpers";
-import { QueueAccount, SwitchboardProgram } from "@switchboard-xyz/solana.js";
+import {
+  QueueAccount,
+  SBV2_MAINNET_PID,
+  SwitchboardProgram,
+} from "@switchboard-xyz/solana.js";
 import chalk from "chalk";
 import fs from "fs";
 import {
@@ -599,16 +603,15 @@ async function loadCli(
   // const envProvider = anchor.AnchorProvider.local(url);
 
   const provider = new anchor.AnchorProvider(
-    new anchor.web3.Connection(url, {
-      commitment: DEFAULT_COMMITMENT,
-    }),
+    new anchor.web3.Connection(url, { commitment: DEFAULT_COMMITMENT }),
     new anchor.Wallet(loadKeypair(walletPath)),
-    {
-      commitment: DEFAULT_COMMITMENT,
-    }
+    { commitment: DEFAULT_COMMITMENT }
   );
 
-  const switchboardProgram = await SwitchboardProgram.fromProvider(provider);
+  const switchboardProgram = await SwitchboardProgram.fromProvider(
+    provider,
+    SBV2_MAINNET_PID
+  );
 
   // load VRF Client program
   // @TODO load IDL asynchronously?
