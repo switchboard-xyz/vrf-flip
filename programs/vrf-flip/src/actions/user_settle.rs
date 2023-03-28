@@ -142,6 +142,8 @@ impl UserSettle<'_> {
             timestamp: clock.unix_timestamp
         });
 
+        user.current_round.status = RoundStatus::Settled;
+
         Ok(())
     }
 }
