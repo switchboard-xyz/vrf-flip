@@ -25,9 +25,18 @@ jobs:
           anchorVersion: "0.27.0"
           nodeVersion: ${{ matrix.nodeVersion }}
 
+      - name: Output keypair to file
+        run:
+          echo "${{ secrets.DEVNET_PAYER_KEYPAIR }}" > ./devnet-payer.json &&
+          chmod 600 ./devnet-payer.json
+
       - name: Anchor Test
         run:
           anchor test --skip-build --skip-deploy --provider.cluster ${{
-          secrets.SOLANA_DEVNET_RPC }}
+          secrets.SOLANA_DEVNET_RPC }} --provider.wallet ./devnet-payer.json
         env:
           SOLANA_CLUSTER: "devnet"
+
+      - name: Remove keypair
+        if: always()
+        run: rm -f ./devnet-payer.json
