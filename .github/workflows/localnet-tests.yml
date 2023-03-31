@@ -1,10 +1,11 @@
-name: Anchor Tests
+name: Localnet Tests
 on:
   workflow_dispatch:
   push:
     branches:
       - "main"
     paths:
+      - ".github/**"
       - "package.json"
       - "yarn.lock"
       - "tests/**"
@@ -13,7 +14,7 @@ on:
 
 jobs:
   vrfFlipTest:
-    name: "Anchor VRF Flip Tests"
+    name: "VRF Flip Localnet Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:

@@ -1,6 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { createWrappedNativeAccount } from "@solana/spl-token";
-import { Keypair } from "@solana/web3.js";
+import {
+  Keypair,
+  sendAndConfirmTransaction,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
 import {
   AnchorWallet,
   QueueAccount,
@@ -73,11 +78,24 @@ export async function createFlipUser(
   const switchboardProgram = program.switchboard;
 
   const keypair = anchor.web3.Keypair.generate();
-  const airdropTxn = await program.provider.connection.requestAirdrop(
-    keypair.publicKey,
-    1 * anchor.web3.LAMPORTS_PER_SOL
-  );
-  await program.provider.connection.confirmTransaction(airdropTxn);
+  try {
+    const airdropTxn = await program.provider.connection.requestAirdrop(
+      keypair.publicKey,
+      1 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    await program.provider.connection.confirmTransaction(airdropTxn);
+  } catch {
+    const transaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: program.payer.publicKey,
+        toPubkey: keypair.publicKey,
+        lamports: 1 * anchor.web3.LAMPORTS_PER_SOL,
+      })
+    );
+    await sendAndConfirmTransaction(program.connection, transaction, [
+      program.payer,
+    ]);
+  }
 
   const provider = new anchor.AnchorProvider(
     switchboardProgram.provider.connection,

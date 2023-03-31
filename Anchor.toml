@@ -11,11 +11,11 @@ switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "npx mocha --extension ts --require ts-node/register -t 1000000 tests/**/*.test.ts"
+test = "npx mocha --extension ts --require ts-node/register -t 1000000 tests/**/*.test.ts  --exit"
 
 [test.validator]
 url = "https://api.mainnet-beta.solana.com"

@@ -171,7 +171,7 @@ export class House {
 
   static async getOrCreate(
     program: anchor.Program,
-    switchboardQueue: QueueAccount,
+    switchboardQueue?: QueueAccount,
     mint?: Keypair
   ): Promise<House> {
     try {
@@ -183,6 +183,12 @@ export class House {
       ) {
         throw error;
       }
+    }
+
+    if (!switchboardQueue) {
+      throw new Error(
+        `Need to provide Switchboard queueAccount if the House hasnt been initialized yet`
+      );
     }
 
     return House.create(program, switchboardQueue, mint ?? Keypair.generate());

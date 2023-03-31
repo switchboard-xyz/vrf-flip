@@ -9,7 +9,13 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
-import { SwitchboardTestContext } from "@switchboard-xyz/solana.js";
+import {
+  QueueAccount,
+  SwitchboardProgram,
+  SwitchboardTestContext,
+  SWITCHBOARD_LABS_DEVNET_PERMISSIONLESS_QUEUE,
+  SWITCHBOARD_LABS_MAINNET_PERMISSIONLESS_QUEUE,
+} from "@switchboard-xyz/solana.js";
 import { VRF_FLIP_NETWORK } from "./switchboard-network";
 import { NodeOracle } from "@switchboard-xyz/oracle";
 
@@ -35,8 +41,10 @@ describe("switchboard-vrf-flip", () => {
 
   let program: FlipProgram;
 
-  let switchboard: SwitchboardTestContext;
-  let oracle: NodeOracle;
+  let switchboardProgram: SwitchboardProgram;
+  let queueAccount: QueueAccount;
+  let switchboard: SwitchboardTestContext | undefined;
+  let oracle: NodeOracle | undefined;
 
   let house: House;
 
@@ -45,34 +53,63 @@ describe("switchboard-vrf-flip", () => {
   before(async () => {
     console.log(`vrf-flip programId: ${anchorProgram.programId}`);
 
-    switchboard = await SwitchboardTestContext.loadFromProvider(
-      provider,
-      VRF_FLIP_NETWORK
-    );
+    // if devnet/mainnet, use the permissionless queues
+    if (
+      process.env.SOLANA_CLUSTER &&
+      process.env.SOLANA_CLUSTER !== "localnet"
+    ) {
+      switchboardProgram = await SwitchboardProgram.fromProvider(provider);
+      if (switchboardProgram.cluster === "devnet") {
+        queueAccount = new QueueAccount(
+          switchboardProgram,
+          SWITCHBOARD_LABS_DEVNET_PERMISSIONLESS_QUEUE
+        );
+      } else if (switchboardProgram.cluster === "mainnet-beta") {
+        queueAccount = new QueueAccount(
+          switchboardProgram,
+          SWITCHBOARD_LABS_MAINNET_PERMISSIONLESS_QUEUE
+        );
+      } else {
+        throw new Error(
+          `Failed to load Switchboard queue for cluster, ${switchboardProgram.cluster}`
+        );
+      }
+      await queueAccount.loadData();
+    } else {
+      // if localnet, we need to create our own queue and run our own oracle
+      switchboard = await SwitchboardTestContext.loadFromProvider(
+        provider,
+        VRF_FLIP_NETWORK
+      );
+      switchboardProgram = switchboard.program;
+      // queueAccount = switchboard.queue;
 
-    console.log(
-      `switchboard programId: ${switchboard.queue.program.programId}`
-    );
-    console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
-    console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
+      console.log(switchboard.program.cluster);
 
-    oracle = await NodeOracle.fromReleaseChannel({
-      chain: "solana",
-      releaseChannel: "testnet",
-      network: "localnet", // disables production capabilities like monitoring and alerts
-      rpcUrl: switchboard.program.connection.rpcEndpoint,
-      oracleKey: switchboard.oracle.publicKey.toBase58(),
-      secretPath: switchboard.walletPath,
-      silent: false, // set to true to suppress oracle logs in the console
-      envVariables: {
-        VERBOSE: "1",
-        DEBUG: "1",
-        DISABLE_NONCE_QUEUE: "1",
-        DISABLE_METRICS: "1",
-      },
-    });
+      console.log(
+        `switchboard programId: ${switchboard.queue.program.programId}`
+      );
+      console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
+      console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
 
-    await oracle.startAndAwait();
+      oracle = await NodeOracle.fromReleaseChannel({
+        chain: "solana",
+        releaseChannel: "testnet",
+        network: "localnet", // disables production capabilities like monitoring and alerts
+        rpcUrl: switchboard.program.connection.rpcEndpoint,
+        oracleKey: switchboard.oracle.publicKey.toBase58(),
+        secretPath: switchboard.walletPath,
+        silent: false, // set to true to suppress oracle logs in the console
+        envVariables: {
+          VERBOSE: "1",
+          DEBUG: "1",
+          DISABLE_NONCE_QUEUE: "1",
+          DISABLE_METRICS: "1",
+        },
+      });
+
+      await oracle.startAndAwait();
+    }
   });
 
   after(() => {
@@ -80,11 +117,7 @@ describe("switchboard-vrf-flip", () => {
   });
 
   it("initialize the house", async () => {
-    house = await House.getOrCreate(
-      anchorProgram,
-      switchboard.queue,
-      MINT_KEYPAIR
-    );
+    house = await House.getOrCreate(anchorProgram, queueAccount, MINT_KEYPAIR);
 
     console.log(house.toJSON());
 
@@ -362,7 +395,7 @@ describe("switchboard-vrf-flip", () => {
   //     Array.from(Array(10).keys()).map(async (n) => {
   //       return {
   //         id: n,
-  //         ...(await createFlipUser(program, switchboard.queue.account)),
+  //         ...(await createFlipUser(program, queueAccount.account)),
   //       };
   //     })
   //   );
