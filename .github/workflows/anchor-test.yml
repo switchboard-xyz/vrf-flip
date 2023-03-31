@@ -1,0 +1,51 @@
+name: Anchor Tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "package.json"
+      - "yarn.lock"
+      - "tests/**"
+      - "programs/vrf-flip/**"
+      - "client/**"
+
+jobs:
+  vrfFlipTest:
+    name: "Anchor VRF Flip Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        nodeVersion: [18, 19.7]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          solanaVersion: "v1.14.10"
+          anchorVersion: "0.27.0"
+          nodeVersion: ${{ matrix.nodeVersion }}
+
+      - name: Cache Build
+        id: cache-anchor-vrf-flip-build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            ./target
+          key:
+            ${{ runner.os }}-AnchorVrfFlip-${{
+            hashFiles('./programs/vrf-flip/Cargo.toml',
+            './programs/vrf-flip/src/**') }}
+
+      - name: Anchor Test
+        run: anchor test
