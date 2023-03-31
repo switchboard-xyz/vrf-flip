@@ -120,3 +120,18 @@ runs:
     - name: Install Dependencies
       shell: bash
       run: yarn install --frozen-lockfile
+
+    - name: Cache Build
+      id: cache-anchor-vrf-flip-build
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          ./target
+        key:
+          ${{ runner.os }}-AnchorVrfFlip-${{
+          hashFiles('./programs/vrf-flip/Cargo.toml', './Cargo.lock',
+          './programs/vrf-flip/src/**') }}

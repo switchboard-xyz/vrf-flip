@@ -53,36 +53,18 @@ describe("switchboard-vrf-flip", () => {
   before(async () => {
     console.log(`vrf-flip programId: ${anchorProgram.programId}`);
 
-    // if devnet/mainnet, use the permissionless queues
     if (
-      process.env.SOLANA_CLUSTER &&
-      process.env.SOLANA_CLUSTER !== "localnet"
+      !process.env.SOLANA_CLUSTER ||
+      (process.env.SOLANA_CLUSTER !== "devnet" &&
+        process.env.SOLANA_CLUSTER !== "mainnet-beta")
     ) {
-      switchboardProgram = await SwitchboardProgram.fromProvider(provider);
-      if (switchboardProgram.cluster === "devnet") {
-        queueAccount = new QueueAccount(
-          switchboardProgram,
-          SWITCHBOARD_LABS_DEVNET_PERMISSIONLESS_QUEUE
-        );
-      } else if (switchboardProgram.cluster === "mainnet-beta") {
-        queueAccount = new QueueAccount(
-          switchboardProgram,
-          SWITCHBOARD_LABS_MAINNET_PERMISSIONLESS_QUEUE
-        );
-      } else {
-        throw new Error(
-          `Failed to load Switchboard queue for cluster, ${switchboardProgram.cluster}`
-        );
-      }
-      await queueAccount.loadData();
-    } else {
       // if localnet, we need to create our own queue and run our own oracle
       switchboard = await SwitchboardTestContext.loadFromProvider(
         provider,
         VRF_FLIP_NETWORK
       );
       switchboardProgram = switchboard.program;
-      // queueAccount = switchboard.queue;
+      queueAccount = switchboard.queue;
 
       console.log(switchboard.program.cluster);
 
@@ -109,6 +91,25 @@ describe("switchboard-vrf-flip", () => {
       });
 
       await oracle.startAndAwait();
+    } else {
+      // if devnet/mainnet, use the permissionless queues
+      switchboardProgram = await SwitchboardProgram.fromProvider(provider);
+      if (switchboardProgram.cluster === "devnet") {
+        queueAccount = new QueueAccount(
+          switchboardProgram,
+          SWITCHBOARD_LABS_DEVNET_PERMISSIONLESS_QUEUE
+        );
+      } else if (switchboardProgram.cluster === "mainnet-beta") {
+        queueAccount = new QueueAccount(
+          switchboardProgram,
+          SWITCHBOARD_LABS_MAINNET_PERMISSIONLESS_QUEUE
+        );
+      } else {
+        throw new Error(
+          `Failed to load Switchboard queue for cluster, ${switchboardProgram.cluster}`
+        );
+      }
+      await queueAccount.loadData();
     }
   });
 
