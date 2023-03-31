@@ -1,7 +1,9 @@
 [features]
 seeds = false
+
 [programs.localnet]
 switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
+
 [programs.devnet]
 switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
 
@@ -11,7 +13,6 @@ url = "https://anchor.projectserum.com"
 [provider]
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"
-
 
 [scripts]
 test = "npx mocha --extension ts --require ts-node/register -t 1000000 tests/**/*.test.ts"
@@ -30,6 +31,3 @@ address = "Fi8vncGpNKbq62gPo56G4toCehWNy77GgqGkTaAF5Lkk"
 
 [[test.validator.clone]] # sbv2 SbState
 address = "CyZuD7RPDcrqCGbNvLCyqk6Py9cEZTKmNKujfPi3ynDd"
-
-[[test.validator.clone]] # sbv2 SOL/USD Feed
-address="GvDMxPzN1sCj7L26YDK2HnMRXEQmQ2aemov8YBtPS7vR"

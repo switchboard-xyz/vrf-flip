@@ -9,8 +9,9 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
-import { SwitchboardTestContextV2 } from "@switchboard-xyz/solana.js";
+import { SwitchboardTestContext } from "@switchboard-xyz/solana.js";
 import { VRF_FLIP_NETWORK } from "./switchboard-network";
+import { NodeOracle } from "@switchboard-xyz/oracle";
 
 // CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
@@ -34,7 +35,8 @@ describe("switchboard-vrf-flip", () => {
 
   let program: FlipProgram;
 
-  let switchboard: SwitchboardTestContextV2;
+  let switchboard: SwitchboardTestContext;
+  let oracle: NodeOracle;
 
   let house: House;
 
@@ -43,7 +45,7 @@ describe("switchboard-vrf-flip", () => {
   before(async () => {
     console.log(`vrf-flip programId: ${anchorProgram.programId}`);
 
-    switchboard = await SwitchboardTestContextV2.loadFromProvider(
+    switchboard = await SwitchboardTestContext.loadFromProvider(
       provider,
       VRF_FLIP_NETWORK
     );
@@ -54,11 +56,27 @@ describe("switchboard-vrf-flip", () => {
     console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
     console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
 
-    await switchboard.start();
+    oracle = await NodeOracle.fromReleaseChannel({
+      chain: "solana",
+      releaseChannel: "testnet",
+      network: "localnet", // disables production capabilities like monitoring and alerts
+      rpcUrl: switchboard.program.connection.rpcEndpoint,
+      oracleKey: switchboard.oracle.publicKey.toBase58(),
+      secretPath: switchboard.walletPath,
+      silent: false, // set to true to suppress oracle logs in the console
+      envVariables: {
+        VERBOSE: "1",
+        DEBUG: "1",
+        DISABLE_NONCE_QUEUE: "1",
+        DISABLE_METRICS: "1",
+      },
+    });
+
+    await oracle.startAndAwait();
   });
 
   after(() => {
-    switchboard?.stop();
+    oracle?.stop();
   });
 
   it("initialize the house", async () => {

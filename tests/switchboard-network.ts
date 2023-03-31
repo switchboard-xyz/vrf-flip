@@ -2,7 +2,7 @@ import { Keypair } from "@solana/web3.js";
 import path from "path";
 import fs from "fs";
 import os from "os";
-import { SwitchboardTestContextV2Init } from "@switchboard-xyz/solana.js";
+import { SwitchboardTestContextInit } from "@switchboard-xyz/solana.js";
 
 export function loadKeypair(keypairPath: string): Keypair {
   const fullPath =
@@ -21,7 +21,7 @@ export function loadKeypair(keypairPath: string): Keypair {
 
 // TIP: You can define a keypair in order to create the same queue + oracle each run.
 // This is useful for debugging
-export const VRF_FLIP_NETWORK: SwitchboardTestContextV2Init = {
+export const VRF_FLIP_NETWORK: SwitchboardTestContextInit = {
   name: "VRF Flip Queue",
   //   keypair: loadKeypair("./my_queue_keypair.json"),
   queueSize: 10,
