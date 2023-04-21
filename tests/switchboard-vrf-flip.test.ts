@@ -8,13 +8,19 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  ParsedTransactionWithMeta,
+  PublicKey,
+} from "@solana/web3.js";
 import {
   QueueAccount,
   SwitchboardProgram,
   SwitchboardTestContext,
   SWITCHBOARD_LABS_DEVNET_PERMISSIONLESS_QUEUE,
   SWITCHBOARD_LABS_MAINNET_PERMISSIONLESS_QUEUE,
+  VrfAccount,
 } from "@switchboard-xyz/solana.js";
 import { VRF_FLIP_NETWORK } from "./switchboard-network";
 import { NodeOracle } from "@switchboard-xyz/oracle";
@@ -192,6 +198,76 @@ describe("switchboard-vrf-flip", () => {
       }
     } catch (error) {
       console.error(error);
+
+      // flip failed, lets check the state of the VRF Account
+      const [vrfAccount, vrfState] = await VrfAccount.load(
+        switchboardProgram,
+        flipUser.user.state.vrf
+      );
+
+      const counter = vrfState.counter.toNumber();
+      const status = vrfState.status.kind;
+      const txRemaining = vrfState.builders[0].txRemaining;
+      const requestSlot = vrfState.currentRound.requestSlot.toNumber();
+
+      console.log(`Counter: ${counter}`);
+      console.log(`RequestSlot: ${requestSlot}`);
+      console.log(`Status: ${status}`);
+      console.log(`TxnRemaining: ${txRemaining}`);
+
+      // check if vrf was ever requested
+      if (counter === 0 || status === "StatusNone") {
+        const txns = await grepTransactionLogs(
+          vrfAccount.program.connection,
+          vrfAccount.publicKey,
+          "Instruction: VrfRequestRandomness",
+          {
+            limit: 50,
+            minContextSlot:
+              vrfState.currentRound.requestSlot.toNumber() > 0
+                ? vrfState.currentRound.requestSlot.toNumber()
+                : undefined,
+          }
+        );
+        console.log(txns.grepLogs);
+        throw new Error(
+          `VrfAccount counter = 0, check your requestRandomness CPI ixn logs for details`
+        );
+      }
+
+      // check if any VRF verify txns were sent
+      if (status === "StatusRequesting") {
+        console.log(`VRF was requested but did not complete`);
+        if (txRemaining === 277) {
+          throw new Error(
+            `No VRF verify transactions were sent - was the oracle running? `
+          );
+        }
+      }
+
+      // check if callback was ever invoked
+      if (status === "StatusVerified") {
+        console.log(`VRF was verified successfully but the callback failed`);
+
+        // check callback
+        const txns = await grepTransactionLogs(
+          vrfAccount.program.connection,
+          vrfAccount.publicKey,
+          "Invoking callback",
+          {
+            limit: 50,
+            minContextSlot: requestSlot > 0 ? requestSlot : undefined,
+          }
+        );
+
+        if (txns.grepTransactions.length !== 0) {
+          console.log(`VRF attempted to invoke your callback`);
+          console.log(txns.grepLogs + "\n");
+        } else {
+          console.log(`No callback attempts found`);
+        }
+      }
+
       throw error;
     }
 
@@ -448,3 +524,70 @@ describe("switchboard-vrf-flip", () => {
   //   });
   // });
 });
+
+async function grepTransactionLogs(
+  connection: Connection,
+  publicKey: PublicKey,
+  grep?: string,
+  options?: anchor.web3.SignaturesForAddressOptions
+): Promise<{
+  signatures: Array<string>;
+  allTransactions: Array<ParsedTransactionWithMeta>;
+  grepTransactions: Array<ParsedTransactionWithMeta>;
+  grepLogs: string;
+}> {
+  const transactions = await connection.getSignaturesForAddress(
+    publicKey,
+    options,
+    "confirmed"
+  );
+  const signatures = transactions.map((txn) => txn.signature);
+  const parsedTransactions: Array<ParsedTransactionWithMeta> =
+    await connection.getParsedTransactions(signatures, "confirmed");
+
+  const grepTransactions: Array<ParsedTransactionWithMeta> =
+    parsedTransactions.filter((t) => {
+      if (t === null) {
+        return false;
+      }
+
+      if (grep) {
+        const logs = t.meta?.logMessages?.join("\n") ?? "";
+        if (logs.includes(grep)) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+  return {
+    signatures,
+    allTransactions: parsedTransactions,
+    grepTransactions,
+    grepLogs: grepTransactions
+      .map((t) => t.meta?.logMessages?.join("\n") ?? "")
+      .join("\n"),
+  };
+}
+function filterTransactionLogs(
+  txns: Array<ParsedTransactionWithMeta>,
+  grep: string
+): Array<ParsedTransactionWithMeta> {
+  const grepTransactions: Array<ParsedTransactionWithMeta> = txns.filter(
+    (t) => {
+      if (t === null) {
+        return false;
+      }
+
+      const logs = t.meta?.logMessages?.join("\n") ?? "";
+      if (logs.includes(grep)) {
+        return true;
+      }
+
+      return false;
+    }
+  );
+
+  return grepTransactions;
+}
