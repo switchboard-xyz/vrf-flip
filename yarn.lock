@@ -184,18 +184,19 @@
     rpc-websockets "^7.5.1"
     superstruct "^0.14.2"
 
-"@switchboard-xyz/common@^2.1.33":
-  version "2.1.33"
-  resolved "https://registry.yarnpkg.com/@switchboard-xyz/common/-/common-2.1.33.tgz#4b75241ae4753ee3f0f2c72436e4d01da5586aca"
-  integrity sha512-cZ+OPxYdD4Z3qBWlhWWgemXQDQoNiPh6mgd2bcF8mIGvdlJ1WzE5rD7UqfpuBM8Sq9bHe9c2oNDzGRGuNUtG0w==
+"@switchboard-xyz/common@^2.2.3":
+  version "2.2.3"
+  resolved "https://registry.npmjs.org/@switchboard-xyz/common/-/common-2.2.3.tgz#f4d39cea8cea9354ad369f749462fa37152c4ec9"
+  integrity sha512-E4NQf9aXdOiul+sySAbFPAW9k0qz4wRTfqrU7cEa8nRIvUkg6VIZ+5JfajHv/VfK9UOD+6ZfMBxq2+dHkiz9zw==
   dependencies:
     "@solana/web3.js" "^1.66.2"
     "@types/big.js" "^6.1.6"
     "@types/bn.js" "^5.1.1"
     big.js "^6.2.1"
     bn.js "^5.2.1"
+    bs58 "^5.0.0"
     decimal.js "^10.4.3"
-    protobufjs "^7.1.2"
+    protobufjs "^7.2.3"
     yaml "^2.2.1"
 
 "@switchboard-xyz/oracle@^2.1.13":
@@ -208,16 +209,16 @@
     node-fetch "^2.6.9"
     xdg-basedir "^4.0.0"
 
-"@switchboard-xyz/solana.js@^2.1.4":
-  version "2.1.4"
-  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.1.4.tgz#b8cc9c18d8ee7717908b767ead71a92bca7de5b8"
-  integrity sha512-IlV1PuAUWIJaGcrAnwffZQ5W5dUkZmIulNJL+3y+/0p/f4rIcialD2Ka7KqTiQbJQr0XYAQMELv0I8Px8oZLNg==
+"@switchboard-xyz/solana.js@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.npmjs.org/@switchboard-xyz/solana.js/-/solana.js-2.2.0.tgz#5108cfbbf0ca6e48297ae8c6e8c11f39e04ac32a"
+  integrity sha512-UzAyKDY1wq1UO50PsKc/6huF6xYX/3B5kA0lmEnZMb+5L6M3YtDckbxk6mD4kG7J0curvvX6Alu9cO6uGqnI3A==
   dependencies:
     "@coral-xyz/anchor" "^0.27.0"
     "@coral-xyz/borsh" "^0.27.0"
     "@solana/spl-token" "^0.3.6"
     "@solana/web3.js" "^1.73.0"
-    "@switchboard-xyz/common" "^2.1.33"
+    "@switchboard-xyz/common" "^2.2.3"
     dotenv "^16.0.3"
     lodash "^4.17.21"
 
@@ -446,6 +447,11 @@ base-x@^3.0.2:
   dependencies:
     safe-buffer "^5.0.1"
 
+base-x@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.npmjs.org/base-x/-/base-x-4.0.0.tgz#d0e3b7753450c73f8ad2389b5c018a4af7b2224a"
+  integrity sha512-FuwxlW4H5kh37X/oW59pwTzzTKRzfrrQwhmyspRM7swOEZcHtDZSCt45U6oKgtuFE+WYPblePMVIPR4RZrh/hw==
+
 base64-js@^1.3.1, base64-js@^1.5.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
@@ -520,6 +526,13 @@ bs58@^4.0.0, bs58@^4.0.1:
   integrity sha512-Ok3Wdf5vOIlBrgCvTq96gBkJw+JUEzdBgyaza5HLtPm7yTHkjRy8+JzNyHF7BHa0bNWOQIp3m5YF0nnFcOIKLw==
   dependencies:
     base-x "^3.0.2"
+
+bs58@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.npmjs.org/bs58/-/bs58-5.0.0.tgz#865575b4d13c09ea2a84622df6c8cbeb54ffc279"
+  integrity sha512-r+ihvQJvahgYT50JD05dyJNKlmmSlMoOGwn1lCcEzanPglg7TxYjioQUYehQ9mAR/+hOSd2jRc/Z2y5UxBymvQ==
+  dependencies:
+    base-x "^4.0.0"
 
 buffer-crc32@~0.2.3:
   version "0.2.13"
@@ -1412,10 +1425,10 @@ progress@^2.0.3:
   resolved "https://registry.npmjs.org/progress/-/progress-2.0.3.tgz#7e8cf8d8f5b8f239c1bc68beb4eb78567d572ef8"
   integrity sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==
 
-protobufjs@^7.1.2:
-  version "7.2.2"
-  resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-7.2.2.tgz#2af401d8c547b9476fb37ffc65782cf302342ca3"
-  integrity sha512-++PrQIjrom+bFDPpfmqXfAGSQs40116JRrqqyf53dymUMvvb5d/LMRyicRoF1AUKoXVS1/IgJXlEgcpr4gTF3Q==
+protobufjs@^7.2.3:
+  version "7.2.3"
+  resolved "https://registry.npmjs.org/protobufjs/-/protobufjs-7.2.3.tgz#01af019e40d9c6133c49acbb3ff9e30f4f0f70b2"
+  integrity sha512-TtpvOqwB5Gdz/PQmOjgsrGH1nHjAQVCN7JG4A6r1sXRWESL5rNMAiRcBQlCAdKxZcAbstExQePYG8xof/JVRgg==
   dependencies:
     "@protobufjs/aspromise" "^1.1.2"
     "@protobufjs/base64" "^1.1.2"
