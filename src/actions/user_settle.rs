@@ -91,7 +91,6 @@ impl UserSettle<'_> {
         let house_seeds: &[&[&[u8]]] = &[&[&HOUSE_SEED, &[house_bump]]];
         drop(house);
 
-
         let mut user = ctx.accounts.user.load_mut()?;
 
         let user_won = user.current_round.settle(&params.result)?;

@@ -40,7 +40,7 @@ pub struct UserInit<'info> {
     pub escrow: Account<'info, TokenAccount>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = payer,
         associated_token::mint = mint,
         associated_token::authority = authority,
@@ -133,8 +133,8 @@ impl UserInit<'_> {
 
         let user = &mut ctx.accounts.user.load_init()?;
 
-        user.bump = ctx.bumps.get("user").unwrap().clone();
-        user.authority = ctx.accounts.authority.key().clone();
+        user.bump = *ctx.bumps.get("user").unwrap();
+        user.authority = ctx.accounts.authority.key();
         user.house = ctx.accounts.house.key();
         user.escrow = ctx.accounts.escrow.key();
         user.reward_address = ctx.accounts.reward_address.key();
@@ -144,9 +144,9 @@ impl UserInit<'_> {
         user.last_airdrop_request_slot = 0;
         user.history = History::default();
       
-        let house_key = ctx.accounts.house.key().clone();
+        let house_key = ctx.accounts.house.key();
         let house_bump = ctx.accounts.house.load()?.bump;
-        let house_seeds: &[&[&[u8]]] = &[&[&HOUSE_SEED, &[house_bump]]];
+        let house_seeds: &[&[&[u8]]] = &[&[HOUSE_SEED, &[house_bump]]];
 
         msg!("setting user escrow authority to the house");
         token::set_authority(

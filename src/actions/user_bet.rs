@@ -48,10 +48,14 @@ pub struct UserBet<'info> {
     // SWITCHBOARD ACCOUNTS
     #[account(address = anchor_spl::token::spl_token::native_mint::ID)]
     pub switchboard_mint: Account<'info, Mint>,
+
     #[account(mut)]
     pub switchboard_function: AccountLoader<'info, FunctionAccountData>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = switchboard_request.authority == user.key()
+    )]
     pub switchboard_request: Box<Account<'info, FunctionRequestAccountData>>,
     #[account(mut)]
     pub switchboard_request_escrow: Box<Account<'info, TokenAccount>>,
@@ -155,6 +159,41 @@ impl UserBet<'_> {
         let user_bump = user.bump;
         drop(user);
 
+        transfer(
+            &ctx.accounts.token_program, 
+            &ctx.accounts.flip_payer, 
+            &ctx.accounts.escrow, 
+            &ctx.accounts.payer.to_account_info(), 
+            &[], 
+            params.bet_amount
+        )?;
+
+        msg!("setting request config");
+        let request_params = format!(
+            "PID={},MINT={},USER={},ESCROW={},REWARD={}",
+            crate::id(),
+            ctx.accounts.house.load()?.mint,
+            ctx.accounts.user.key(),
+            ctx.accounts.escrow.key(),
+            ctx.accounts.flip_payer.key()
+        );
+        let request_config_ctx = FunctionRequestSetConfig {
+            request: ctx.accounts.switchboard_request.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+        request_config_ctx.invoke_signed(
+            ctx.accounts.switchboard.clone(),
+            request_params.into_bytes(),
+            false,
+            &[&[
+                USER_SEED,
+                ctx.accounts.house.key().as_ref(),
+                ctx.accounts.authority.key().as_ref(),
+                &[user_bump],
+            ]],
+        )?;
+        msg!("request config set!");
+
         let request_ctx = FunctionRequestTrigger {
             request: ctx.accounts.switchboard_request.to_account_info(),
             authority: ctx.accounts.user.to_account_info(),
@@ -176,7 +215,7 @@ impl UserBet<'_> {
                 ctx.accounts.house.key().as_ref(),
                 ctx.accounts.authority.key().as_ref(),
                 &[user_bump],
-            ]]
+            ]],
         )?;
         msg!("randomness requested successfully");
 

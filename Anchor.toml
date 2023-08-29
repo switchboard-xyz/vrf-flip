@@ -14,11 +14,14 @@ switchboard_vrf_flip = "HC7vQXUpCX2pVwcpTBDnxQQyqzeiHu6u1K16A3gTyoux"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
-wallet = "~/.config/solana/id.json"
+# cluster = "localnet"
+# wallet = "~/.config/solana/id.json"
+cluster = "devnet"
+wallet = "~/switchboard_environments_v2/devnet/upgrade_authority/upgrade_authority.json"
 
 [scripts]
 test = "npx mocha --extension ts --require ts-node/register -t 1000000 tests/**/*.test.ts  --exit"
+request = "tsx ./request.ts"
 
 [test.validator]
 url = "https://api.mainnet-beta.solana.com"

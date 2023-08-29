@@ -12,4 +12,5 @@ path = "src/main.rs"
 [dependencies]
 tokio = "^1"
 futures = "0.3"
-switchboard-solana = "0.28"
+switchboard-solana = "0.28.7"
+bytemuck = "^1"
