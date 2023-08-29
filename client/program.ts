@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import {
-  Cluster,
   Connection,
   Keypair,
   PublicKey,
@@ -9,13 +8,13 @@ import {
 import {
   Mint,
   SwitchboardProgram,
-  QueueAccount,
+  FunctionAccount,
   AnchorWallet,
   TransactionObject,
   SendTransactionOptions,
   DEFAULT_SEND_TRANSACTION_OPTIONS,
   TransactionOptions,
-  SBV2_MAINNET_PID,
+  SB_V2_PID,
 } from "@switchboard-xyz/solana.js";
 import { HouseState } from "./generated/accounts";
 import { House } from "./house";
@@ -25,7 +24,7 @@ export class FlipProgram {
     readonly program: anchor.Program,
     readonly house: House,
     readonly mint: Mint,
-    readonly queue: QueueAccount
+    readonly switchboardFunction: FunctionAccount
   ) {}
 
   get idl(): anchor.Idl {
@@ -37,7 +36,7 @@ export class FlipProgram {
   }
 
   get switchboard(): SwitchboardProgram {
-    return this.queue.program;
+    return this.switchboardFunction.program;
   }
 
   get provider(): anchor.AnchorProvider {
@@ -58,12 +57,12 @@ export class FlipProgram {
 
   static async init(
     program: anchor.Program,
-    switchboardQueue: QueueAccount,
+    switchboardFunction: FunctionAccount,
     mintKeypair: Keypair
   ): Promise<FlipProgram> {
-    const house = await House.create(program, switchboardQueue, mintKeypair);
+    const house = await House.create(program, switchboardFunction, mintKeypair);
     const mint = await house.loadMint();
-    return new FlipProgram(program, house, mint, switchboardQueue);
+    return new FlipProgram(program, house, mint, switchboardFunction);
   }
 
   static async load(
@@ -75,7 +74,7 @@ export class FlipProgram {
   ): Promise<FlipProgram> {
     const switchboard = await SwitchboardProgram.fromProvider(
       program.provider as anchor.AnchorProvider,
-      SBV2_MAINNET_PID
+      SB_V2_PID
     );
 
     const [houseKey] = House.fromSeeds(program.programId);
@@ -94,20 +93,23 @@ export class FlipProgram {
           `Must provide queuePubkey to create a new house account`
         );
       }
-      const queueAccount = new QueueAccount(switchboard, params.queuePubkey);
+      const switchboardFunction = new FunctionAccount(
+        switchboard,
+        params.queuePubkey
+      );
       return await FlipProgram.init(
         program,
-        queueAccount,
+        switchboardFunction,
         params?.mintKeypair ? params.mintKeypair : Keypair.generate()
       );
     } else {
       const house = new House(program, houseKey, houseState);
       const mint = await house.loadMint();
-      const queueAccount = new QueueAccount(
+      const switchboardFunction = new FunctionAccount(
         switchboard,
-        house.state.switchboardQueue
+        house.state.switchboardFunction
       );
-      return new FlipProgram(program, house, mint, queueAccount);
+      return new FlipProgram(program, house, mint, switchboardFunction);
     }
   }
 

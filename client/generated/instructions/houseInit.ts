@@ -15,8 +15,7 @@ export interface HouseInitArgs {
 export interface HouseInitAccounts {
   house: PublicKey;
   authority: PublicKey;
-  switchboardMint: PublicKey;
-  switchboardQueue: PublicKey;
+  switchboardFunction: PublicKey;
   mint: PublicKey;
   houseVault: PublicKey;
   payer: PublicKey;
@@ -31,13 +30,17 @@ export const layout = borsh.struct([types.HouseInitParams.layout("params")]);
 export function houseInit(
   program: { programId: PublicKey },
   args: HouseInitArgs,
-  accounts: HouseInitAccounts
+  accounts: HouseInitAccounts,
+  programId: PublicKey = program.programId
 ) {
   const keys: Array<AccountMeta> = [
     { pubkey: accounts.house, isSigner: false, isWritable: true },
     { pubkey: accounts.authority, isSigner: true, isWritable: true },
-    { pubkey: accounts.switchboardMint, isSigner: false, isWritable: false },
-    { pubkey: accounts.switchboardQueue, isSigner: false, isWritable: true },
+    {
+      pubkey: accounts.switchboardFunction,
+      isSigner: false,
+      isWritable: false,
+    },
     { pubkey: accounts.mint, isSigner: true, isWritable: true },
     { pubkey: accounts.houseVault, isSigner: false, isWritable: true },
     { pubkey: accounts.payer, isSigner: true, isWritable: true },
@@ -59,10 +62,6 @@ export function houseInit(
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({
-    keys,
-    programId: program.programId,
-    data,
-  });
+  const ix = new TransactionInstruction({ keys, programId, data });
   return ix;
 }

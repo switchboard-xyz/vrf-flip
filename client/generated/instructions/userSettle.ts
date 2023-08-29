@@ -18,7 +18,9 @@ export interface UserSettleAccounts {
   escrow: PublicKey;
   rewardAddress: PublicKey;
   houseVault: PublicKey;
-  vrf: PublicKey;
+  switchboardFunction: PublicKey;
+  switchboardRequest: PublicKey;
+  enclaveSigner: PublicKey;
   tokenProgram: PublicKey;
 }
 
@@ -27,7 +29,8 @@ export const layout = borsh.struct([types.UserSettleParams.layout("params")]);
 export function userSettle(
   program: { programId: PublicKey },
   args: UserSettleArgs,
-  accounts: UserSettleAccounts
+  accounts: UserSettleAccounts,
+  programId: PublicKey = program.programId
 ) {
   const keys: Array<AccountMeta> = [
     { pubkey: accounts.user, isSigner: false, isWritable: true },
@@ -35,7 +38,13 @@ export function userSettle(
     { pubkey: accounts.escrow, isSigner: false, isWritable: true },
     { pubkey: accounts.rewardAddress, isSigner: false, isWritable: true },
     { pubkey: accounts.houseVault, isSigner: false, isWritable: true },
-    { pubkey: accounts.vrf, isSigner: false, isWritable: false },
+    {
+      pubkey: accounts.switchboardFunction,
+      isSigner: false,
+      isWritable: false,
+    },
+    { pubkey: accounts.switchboardRequest, isSigner: false, isWritable: false },
+    { pubkey: accounts.enclaveSigner, isSigner: true, isWritable: false },
     { pubkey: accounts.tokenProgram, isSigner: false, isWritable: false },
   ];
   const identifier = Buffer.from([184, 56, 135, 64, 228, 26, 152, 183]);
@@ -47,10 +56,6 @@ export function userSettle(
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({
-    keys,
-    programId: program.programId,
-    data,
-  });
+  const ix = new TransactionInstruction({ keys, programId, data });
   return ix;
 }

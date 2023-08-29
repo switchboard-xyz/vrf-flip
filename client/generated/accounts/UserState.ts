@@ -10,9 +10,7 @@ export interface UserStateFields {
   house: PublicKey;
   escrow: PublicKey;
   rewardAddress: PublicKey;
-  vrf: PublicKey;
-  switchboardStateBump: number;
-  vrfPermissionBump: number;
+  switchboardRequest: PublicKey;
   currentRound: types.RoundFields;
   lastAirdropRequestSlot: BN;
   ebuf: Array<number>;
@@ -25,9 +23,7 @@ export interface UserStateJSON {
   house: string;
   escrow: string;
   rewardAddress: string;
-  vrf: string;
-  switchboardStateBump: number;
-  vrfPermissionBump: number;
+  switchboardRequest: string;
   currentRound: types.RoundJSON;
   lastAirdropRequestSlot: string;
   ebuf: Array<number>;
@@ -40,9 +36,7 @@ export class UserState {
   readonly house: PublicKey;
   readonly escrow: PublicKey;
   readonly rewardAddress: PublicKey;
-  readonly vrf: PublicKey;
-  readonly switchboardStateBump: number;
-  readonly vrfPermissionBump: number;
+  readonly switchboardRequest: PublicKey;
   readonly currentRound: types.Round;
   readonly lastAirdropRequestSlot: BN;
   readonly ebuf: Array<number>;
@@ -58,9 +52,7 @@ export class UserState {
     borsh.publicKey("house"),
     borsh.publicKey("escrow"),
     borsh.publicKey("rewardAddress"),
-    borsh.publicKey("vrf"),
-    borsh.u8("switchboardStateBump"),
-    borsh.u8("vrfPermissionBump"),
+    borsh.publicKey("switchboardRequest"),
     types.Round.layout("currentRound"),
     borsh.u64("lastAirdropRequestSlot"),
     borsh.array(borsh.u8(), 1024, "ebuf"),
@@ -73,9 +65,7 @@ export class UserState {
     this.house = fields.house;
     this.escrow = fields.escrow;
     this.rewardAddress = fields.rewardAddress;
-    this.vrf = fields.vrf;
-    this.switchboardStateBump = fields.switchboardStateBump;
-    this.vrfPermissionBump = fields.vrfPermissionBump;
+    this.switchboardRequest = fields.switchboardRequest;
     this.currentRound = new types.Round({ ...fields.currentRound });
     this.lastAirdropRequestSlot = fields.lastAirdropRequestSlot;
     this.ebuf = fields.ebuf;
@@ -84,14 +74,15 @@ export class UserState {
 
   static async fetch(
     program: { connection: Connection; programId: PublicKey },
-    address: PublicKey
+    address: PublicKey,
+    programId: PublicKey = program.programId
   ): Promise<UserState | null> {
     const info = await program.connection.getAccountInfo(address);
 
     if (info === null) {
       return null;
     }
-    if (!info.owner.equals(program.programId)) {
+    if (!info.owner.equals(programId)) {
       throw new Error("account doesn't belong to this program");
     }
 
@@ -100,7 +91,8 @@ export class UserState {
 
   static async fetchMultiple(
     program: { connection: Connection; programId: PublicKey },
-    addresses: PublicKey[]
+    addresses: PublicKey[],
+    programId: PublicKey = program.programId
   ): Promise<Array<UserState | null>> {
     const infos = await program.connection.getMultipleAccountsInfo(addresses);
 
@@ -108,7 +100,7 @@ export class UserState {
       if (info === null) {
         return null;
       }
-      if (!info.owner.equals(program.programId)) {
+      if (!info.owner.equals(programId)) {
         throw new Error("account doesn't belong to this program");
       }
 
@@ -129,9 +121,7 @@ export class UserState {
       house: dec.house,
       escrow: dec.escrow,
       rewardAddress: dec.rewardAddress,
-      vrf: dec.vrf,
-      switchboardStateBump: dec.switchboardStateBump,
-      vrfPermissionBump: dec.vrfPermissionBump,
+      switchboardRequest: dec.switchboardRequest,
       currentRound: types.Round.fromDecoded(dec.currentRound),
       lastAirdropRequestSlot: dec.lastAirdropRequestSlot,
       ebuf: dec.ebuf,
@@ -146,9 +136,7 @@ export class UserState {
       house: this.house.toString(),
       escrow: this.escrow.toString(),
       rewardAddress: this.rewardAddress.toString(),
-      vrf: this.vrf.toString(),
-      switchboardStateBump: this.switchboardStateBump,
-      vrfPermissionBump: this.vrfPermissionBump,
+      switchboardRequest: this.switchboardRequest.toString(),
       currentRound: this.currentRound.toJSON(),
       lastAirdropRequestSlot: this.lastAirdropRequestSlot.toString(),
       ebuf: this.ebuf,
@@ -163,9 +151,7 @@ export class UserState {
       house: new PublicKey(obj.house),
       escrow: new PublicKey(obj.escrow),
       rewardAddress: new PublicKey(obj.rewardAddress),
-      vrf: new PublicKey(obj.vrf),
-      switchboardStateBump: obj.switchboardStateBump,
-      vrfPermissionBump: obj.vrfPermissionBump,
+      switchboardRequest: new PublicKey(obj.switchboardRequest),
       currentRound: types.Round.fromJSON(obj.currentRound),
       lastAirdropRequestSlot: new BN(obj.lastAirdropRequestSlot),
       ebuf: obj.ebuf,

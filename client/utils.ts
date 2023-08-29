@@ -8,6 +8,7 @@ import {
 } from "@solana/web3.js";
 import {
   AnchorWallet,
+  FunctionAccount,
   QueueAccount,
   SwitchboardProgram,
 } from "@switchboard-xyz/solana.js";
@@ -109,12 +110,13 @@ export async function createFlipUser(
   );
 
   // const newSwitchboardProgram = await SwitchboardProgram.fromProvider(provider);
+  const oldSbProgram: anchor.Program<anchor.Idl> = (program.switchboard as any)
+    ._program;
+  const oldAttProgram: anchor.Program<anchor.Idl> = (program.switchboard as any)
+    ._attestationProgram;
   const newSwitchboardProgram = new SwitchboardProgram(
-    new anchor.Program(
-      program.switchboard.idl,
-      program.switchboard.programId,
-      provider
-    ),
+    new anchor.Program(oldSbProgram.idl, oldSbProgram.programId, provider),
+    new anchor.Program(oldAttProgram.idl, oldAttProgram.programId, provider),
     program.switchboard.cluster,
     program.switchboard.mint
   );
@@ -133,7 +135,10 @@ export async function createFlipUser(
     flipAnchorProgram,
     program.house,
     program.mint,
-    new QueueAccount(newSwitchboardProgram, program.queue.publicKey) // rebuild the queue with the new switchboard program + provider
+    new FunctionAccount(
+      newSwitchboardProgram,
+      program.switchboardFunction.publicKey
+    ) // rebuild the queue with the new switchboard program + provider
   );
 
   const user = await User.create(flipProgram);

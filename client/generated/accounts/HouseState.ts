@@ -9,8 +9,7 @@ export interface HouseStateFields {
   authority: PublicKey;
   mint: PublicKey;
   houseVault: PublicKey;
-  switchboardQueue: PublicKey;
-  switchboardMint: PublicKey;
+  switchboardFunction: PublicKey;
   ebuf: Array<number>;
 }
 
@@ -19,8 +18,7 @@ export interface HouseStateJSON {
   authority: string;
   mint: string;
   houseVault: string;
-  switchboardQueue: string;
-  switchboardMint: string;
+  switchboardFunction: string;
   ebuf: Array<number>;
 }
 
@@ -29,8 +27,7 @@ export class HouseState {
   readonly authority: PublicKey;
   readonly mint: PublicKey;
   readonly houseVault: PublicKey;
-  readonly switchboardQueue: PublicKey;
-  readonly switchboardMint: PublicKey;
+  readonly switchboardFunction: PublicKey;
   readonly ebuf: Array<number>;
 
   static readonly discriminator = Buffer.from([
@@ -42,8 +39,7 @@ export class HouseState {
     borsh.publicKey("authority"),
     borsh.publicKey("mint"),
     borsh.publicKey("houseVault"),
-    borsh.publicKey("switchboardQueue"),
-    borsh.publicKey("switchboardMint"),
+    borsh.publicKey("switchboardFunction"),
     borsh.array(borsh.u8(), 1024, "ebuf"),
   ]);
 
@@ -52,21 +48,21 @@ export class HouseState {
     this.authority = fields.authority;
     this.mint = fields.mint;
     this.houseVault = fields.houseVault;
-    this.switchboardQueue = fields.switchboardQueue;
-    this.switchboardMint = fields.switchboardMint;
+    this.switchboardFunction = fields.switchboardFunction;
     this.ebuf = fields.ebuf;
   }
 
   static async fetch(
     program: { connection: Connection; programId: PublicKey },
-    address: PublicKey
+    address: PublicKey,
+    programId: PublicKey = program.programId
   ): Promise<HouseState | null> {
     const info = await program.connection.getAccountInfo(address);
 
     if (info === null) {
       return null;
     }
-    if (!info.owner.equals(program.programId)) {
+    if (!info.owner.equals(programId)) {
       throw new Error("account doesn't belong to this program");
     }
 
@@ -75,7 +71,8 @@ export class HouseState {
 
   static async fetchMultiple(
     program: { connection: Connection; programId: PublicKey },
-    addresses: PublicKey[]
+    addresses: PublicKey[],
+    programId: PublicKey = program.programId
   ): Promise<Array<HouseState | null>> {
     const infos = await program.connection.getMultipleAccountsInfo(addresses);
 
@@ -83,7 +80,7 @@ export class HouseState {
       if (info === null) {
         return null;
       }
-      if (!info.owner.equals(program.programId)) {
+      if (!info.owner.equals(programId)) {
         throw new Error("account doesn't belong to this program");
       }
 
@@ -103,8 +100,7 @@ export class HouseState {
       authority: dec.authority,
       mint: dec.mint,
       houseVault: dec.houseVault,
-      switchboardQueue: dec.switchboardQueue,
-      switchboardMint: dec.switchboardMint,
+      switchboardFunction: dec.switchboardFunction,
       ebuf: dec.ebuf,
     });
   }
@@ -115,8 +111,7 @@ export class HouseState {
       authority: this.authority.toString(),
       mint: this.mint.toString(),
       houseVault: this.houseVault.toString(),
-      switchboardQueue: this.switchboardQueue.toString(),
-      switchboardMint: this.switchboardMint.toString(),
+      switchboardFunction: this.switchboardFunction.toString(),
       ebuf: this.ebuf,
     };
   }
@@ -127,8 +122,7 @@ export class HouseState {
       authority: new PublicKey(obj.authority),
       mint: new PublicKey(obj.mint),
       houseVault: new PublicKey(obj.houseVault),
-      switchboardQueue: new PublicKey(obj.switchboardQueue),
-      switchboardMint: new PublicKey(obj.switchboardMint),
+      switchboardFunction: new PublicKey(obj.switchboardFunction),
       ebuf: obj.ebuf,
     });
   }

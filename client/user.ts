@@ -4,18 +4,14 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
-  SYSVAR_RECENT_BLOCKHASHES_PUBKEY,
   TransactionSignature,
 } from "@solana/web3.js";
 import { promiseWithTimeout, sleep } from "@switchboard-xyz/common";
 import {
-  AnchorWallet,
-  Callback,
-  PermissionAccount,
-  QueueAccount,
+  FunctionRequestAccount,
+  FunctionAccount,
   SwitchboardProgram,
   TransactionObject,
-  VrfAccount,
 } from "@switchboard-xyz/solana.js";
 import { UserState, UserStateJSON } from "./generated/accounts";
 import { userAirdrop, userBet, userInit } from "./generated/instructions";
@@ -51,8 +47,6 @@ export interface UserJSON extends UserStateJSON {
   publicKey: string;
 }
 
-const VRF_REQUEST_AMOUNT = new anchor.BN(0.002 * LAMPORTS_PER_SOL);
-
 export class User {
   state: UserState;
   private readonly _programEventListeners: number[] = [];
@@ -76,21 +70,26 @@ export class User {
     return new User(program, userKey, userState);
   }
 
-  getVrfAccount(switchboardProgram: SwitchboardProgram): VrfAccount {
-    const vrfAccount = new VrfAccount(switchboardProgram, this.state.vrf);
-    return vrfAccount;
+  getRequestAccount(
+    switchboardProgram: SwitchboardProgram
+  ): FunctionRequestAccount {
+    const requestAccount = new FunctionRequestAccount(
+      switchboardProgram,
+      this.state.switchboardRequest
+    );
+    return requestAccount;
   }
 
-  async getQueueAccount(
+  async getFunctionAccount(
     switchboardProgram: SwitchboardProgram
-  ): Promise<QueueAccount> {
-    const vrfAccount = this.getVrfAccount(switchboardProgram);
-    const vrfState = await vrfAccount.loadData();
-    const queueAccount = new QueueAccount(
+  ): Promise<FunctionAccount> {
+    const requestAccount = this.getRequestAccount(switchboardProgram);
+    const requestState = await requestAccount.loadData();
+    const functionAccount = new FunctionAccount(
       switchboardProgram,
-      vrfState.oracleQueue
+      requestState.function
     );
-    return queueAccount;
+    return functionAccount;
   }
 
   static fromSeeds(
@@ -122,67 +121,14 @@ export class User {
     };
   }
 
-  static async getCallback(
-    program: FlipProgram,
-    user: PublicKey,
-    escrow: PublicKey,
-    vrf: PublicKey,
-    rewardAddress: PublicKey
-  ): Promise<Callback> {
-    const ixnCoder = new anchor.BorshInstructionCoder(program.idl);
-    const callback: Callback = {
-      programId: program.programId,
-      ixData: ixnCoder.encode("userSettle", {}),
-      accounts: [
-        {
-          pubkey: user,
-          isWritable: true,
-          isSigner: false,
-        },
-        {
-          pubkey: program.house.publicKey,
-          isWritable: false,
-          isSigner: false,
-        },
-        {
-          pubkey: escrow,
-          isWritable: true,
-          isSigner: false,
-        },
-        {
-          pubkey: rewardAddress,
-          isWritable: true,
-          isSigner: false,
-        },
-        {
-          pubkey: program.house.state.houseVault,
-          isWritable: true,
-          isSigner: false,
-        },
-        {
-          pubkey: vrf,
-          isWritable: false,
-          isSigner: false,
-        },
-        {
-          pubkey: spl.TOKEN_PROGRAM_ID,
-          isWritable: false,
-          isSigner: false,
-        },
-      ],
-    };
-    return callback;
-  }
-
   static async create(program: FlipProgram): Promise<User> {
-    const [userInitTxns, userKey] = await User.createReq(program);
-    const signatures = await program.signAndSendAll(
-      userInitTxns,
+    const [userInitTxn, userKey] = await User.createReq(program);
+    const signatures = await program.signAndSend(
+      userInitTxn,
       {
         skipPreflight: true,
       },
-      undefined,
-      50
+      undefined
     );
 
     let retryCount = 5;
@@ -201,7 +147,7 @@ export class User {
   static async createReq(
     program: FlipProgram,
     payerPubkey = program.payerPubkey
-  ): Promise<[Array<TransactionObject>, PublicKey]> {
+  ): Promise<[TransactionObject, PublicKey]> {
     // try {
     //   await verifyPayerBalance(
     //     program.provider.connection,
@@ -210,59 +156,47 @@ export class User {
     //   );
     // } catch {}
 
-    const queue = await program.queue.loadData();
-
     const escrowKeypair = anchor.web3.Keypair.generate();
-    const vrfSecret = anchor.web3.Keypair.generate();
 
-    const [userKey, userBump] = User.fromSeeds(program, payerPubkey);
+    const [userKey] = User.fromSeeds(program, payerPubkey);
 
     const rewardAddress = program.mint.getAssociatedAddress(payerPubkey);
 
-    const callback = await User.getCallback(
-      program,
-      userKey,
-      escrowKeypair.publicKey,
-      vrfSecret.publicKey,
-      rewardAddress
+    const houseAccount = await House.getOrCreate(program.program);
+    const switchboardFunction = houseAccount.getFunctionAccount(
+      program.switchboard
     );
+    const functionState = await switchboardFunction.loadData();
 
-    const [vrfAccount, vrfInit] = await program.queue.createVrfInstructions(
-      payerPubkey,
-      {
-        vrfKeypair: vrfSecret,
-        callback: callback,
-        authority: userKey,
-        enable: false, // enable if queue has unpermissionedVrfEnabled set to false
-      }
-    );
+    const requestKeypair = anchor.web3.Keypair.generate();
+    const switchboardRequestEscrow =
+      switchboardFunction.program.mint.getAssociatedAddress(
+        requestKeypair.publicKey
+      );
 
-    const [permissionAccount, permissionBump] = PermissionAccount.fromSeed(
-      program.switchboard,
-      queue.authority,
-      program.queue.publicKey,
-      vrfAccount.publicKey
-    );
-
-    const vrfClientInitTxn = new TransactionObject(
+    const userInitTxn = new TransactionObject(
       payerPubkey,
       [
         userInit(
           program,
           {
-            params: {
-              switchboardStateBump: program.switchboard.programState.bump,
-              vrfPermissionBump: permissionBump,
-            },
+            params: {},
           },
           {
             user: userKey,
-            house: program.house.publicKey,
+            house: houseAccount.publicKey,
             mint: program.mint.address,
             authority: payerPubkey,
             escrow: escrowKeypair.publicKey,
             rewardAddress: rewardAddress,
-            vrf: vrfAccount.publicKey,
+            switchboardFunction: houseAccount.state.switchboardFunction,
+            switchboardMint: switchboardFunction.program.mint.address,
+            switchboardRequest: requestKeypair.publicKey,
+            switchboardRequestEscrow,
+            switchboardState:
+              switchboardFunction.program.attestationProgramState.publicKey,
+            switchboardAttestationQueue: functionState.attestationQueue,
+            switchboard: switchboardFunction.program.attestationProgramId,
             payer: payerPubkey,
             systemProgram: anchor.web3.SystemProgram.programId,
             tokenProgram: spl.TOKEN_PROGRAM_ID,
@@ -271,10 +205,13 @@ export class User {
           }
         ),
       ],
-      [escrowKeypair]
+      [escrowKeypair, requestKeypair],
+      {
+        computeUnitLimit: 250_000,
+      }
     );
 
-    return [TransactionObject.pack([vrfInit, vrfClientInitTxn]), userKey];
+    return [userInitTxn, userKey];
   }
 
   async placeBet(
@@ -302,16 +239,11 @@ export class User {
     //   await verifyPayerBalance(this.program.provider.connection, payerPubkey);
     // } catch {}
 
-    const vrfAccount = new VrfAccount(this.program.switchboard, this.state.vrf);
-    const vrfAccounts = await vrfAccount.fetchAccounts();
-
-    const [payerWrappedWallet, wrapTxn] =
-      await this.program.switchboard.mint.getOrCreateWrappedUserInstructions(
-        payerPubkey,
-        {
-          fundUpTo: 0.002,
-        }
-      );
+    const functionAccount = new FunctionAccount(
+      this.program.switchboard,
+      this.program.house.state.switchboardFunction
+    );
+    const functionState = await functionAccount.loadData();
 
     const betIxn = userBet(
       this.program,
@@ -328,26 +260,25 @@ export class User {
         houseVault: this.program.house.state.houseVault,
         authority: this.state.authority,
         escrow: this.state.escrow,
-        vrf: vrfAccount.publicKey,
-        oracleQueue: vrfAccounts.queue.publicKey,
-        queueAuthority: vrfAccounts.queue.data.authority,
-        dataBuffer: vrfAccounts.queue.data.dataBuffer,
-        permission: vrfAccounts.permission.publicKey,
-        vrfEscrow: vrfAccounts.escrow.publicKey,
-        switchboardProgramState: vrfAccount.program.programState.publicKey,
-        switchboardProgram: vrfAccount.program.programId,
+        switchboardMint: functionAccount.program.mint.address,
+        switchboardFunction: functionAccount.publicKey,
+        switchboardRequest: this.state.switchboardRequest,
+        switchboardRequestEscrow:
+          functionAccount.program.mint.getAssociatedAddress(
+            this.state.switchboardRequest
+          ),
+        switchboardState:
+          functionAccount.program.attestationProgramState.publicKey,
+        switchboardAttestationQueue: functionState.attestationQueue,
+        switchboard: functionAccount.program.attestationProgramId,
         payer: payerPubkey,
-        vrfPayer: payerWrappedWallet,
         flipPayer: this.state.rewardAddress,
-        recentBlockhashes: SYSVAR_RECENT_BLOCKHASHES_PUBKEY,
         systemProgram: SystemProgram.programId,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
       }
     );
 
-    return wrapTxn
-      ? wrapTxn.add(betIxn)
-      : new TransactionObject(payerPubkey, [betIxn], []);
+    return new TransactionObject(payerPubkey, [betIxn], []);
   }
 
   async awaitFlip(

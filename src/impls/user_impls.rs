@@ -1,6 +1,4 @@
 use crate::*;
-use anchor_lang::prelude::*;
-use solana_program::clock::Clock;
 
 pub struct RequestRandomnessAccounts<'a> {
     /// CHECK:

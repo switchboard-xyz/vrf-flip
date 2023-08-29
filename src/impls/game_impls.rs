@@ -1,6 +1,4 @@
 use crate::*;
-use anchor_lang::prelude::*;
-// use solana_program::clock::Clock;
 
 impl GameType {
     pub fn from_u32(val: u32) -> anchor_lang::Result<GameType> {

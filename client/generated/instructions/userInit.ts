@@ -19,7 +19,13 @@ export interface UserInitAccounts {
   authority: PublicKey;
   escrow: PublicKey;
   rewardAddress: PublicKey;
-  vrf: PublicKey;
+  switchboardFunction: PublicKey;
+  switchboardMint: PublicKey;
+  switchboardRequest: PublicKey;
+  switchboardRequestEscrow: PublicKey;
+  switchboardState: PublicKey;
+  switchboardAttestationQueue: PublicKey;
+  switchboard: PublicKey;
   payer: PublicKey;
   systemProgram: PublicKey;
   tokenProgram: PublicKey;
@@ -32,7 +38,8 @@ export const layout = borsh.struct([types.UserInitParams.layout("params")]);
 export function userInit(
   program: { programId: PublicKey },
   args: UserInitArgs,
-  accounts: UserInitAccounts
+  accounts: UserInitAccounts,
+  programId: PublicKey = program.programId
 ) {
   const keys: Array<AccountMeta> = [
     { pubkey: accounts.user, isSigner: false, isWritable: true },
@@ -41,7 +48,21 @@ export function userInit(
     { pubkey: accounts.authority, isSigner: true, isWritable: true },
     { pubkey: accounts.escrow, isSigner: true, isWritable: true },
     { pubkey: accounts.rewardAddress, isSigner: false, isWritable: true },
-    { pubkey: accounts.vrf, isSigner: false, isWritable: true },
+    { pubkey: accounts.switchboardFunction, isSigner: false, isWritable: true },
+    { pubkey: accounts.switchboardMint, isSigner: false, isWritable: false },
+    { pubkey: accounts.switchboardRequest, isSigner: true, isWritable: true },
+    {
+      pubkey: accounts.switchboardRequestEscrow,
+      isSigner: false,
+      isWritable: true,
+    },
+    { pubkey: accounts.switchboardState, isSigner: false, isWritable: false },
+    {
+      pubkey: accounts.switchboardAttestationQueue,
+      isSigner: false,
+      isWritable: false,
+    },
+    { pubkey: accounts.switchboard, isSigner: false, isWritable: false },
     { pubkey: accounts.payer, isSigner: true, isWritable: true },
     { pubkey: accounts.systemProgram, isSigner: false, isWritable: false },
     { pubkey: accounts.tokenProgram, isSigner: false, isWritable: false },
@@ -61,10 +82,6 @@ export function userInit(
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({
-    keys,
-    programId: program.programId,
-    data,
-  });
+  const ix = new TransactionInstruction({ keys, programId, data });
   return ix;
 }

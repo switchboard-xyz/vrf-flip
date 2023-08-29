@@ -27,7 +27,8 @@ export const layout = borsh.struct([types.UserAirdropParams.layout("params")]);
 export function userAirdrop(
   program: { programId: PublicKey },
   args: UserAirdropArgs,
-  accounts: UserAirdropAccounts
+  accounts: UserAirdropAccounts,
+  programId: PublicKey = program.programId
 ) {
   const keys: Array<AccountMeta> = [
     { pubkey: accounts.user, isSigner: false, isWritable: true },
@@ -47,10 +48,6 @@ export function userAirdrop(
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({
-    keys,
-    programId: program.programId,
-    data,
-  });
+  const ix = new TransactionInstruction({ keys, programId, data });
   return ix;
 }

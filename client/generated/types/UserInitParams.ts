@@ -4,59 +4,32 @@ import BN from "bn.js"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import * as types from "../types"; // eslint-disable-line @typescript-eslint/no-unused-vars
 import * as borsh from "@coral-xyz/borsh";
 
-export interface UserInitParamsFields {
-  switchboardStateBump: number;
-  vrfPermissionBump: number;
-}
+export interface UserInitParamsFields {}
 
-export interface UserInitParamsJSON {
-  switchboardStateBump: number;
-  vrfPermissionBump: number;
-}
+export interface UserInitParamsJSON {}
 
 export class UserInitParams {
-  readonly switchboardStateBump: number;
-  readonly vrfPermissionBump: number;
-
-  constructor(fields: UserInitParamsFields) {
-    this.switchboardStateBump = fields.switchboardStateBump;
-    this.vrfPermissionBump = fields.vrfPermissionBump;
-  }
+  constructor(fields: UserInitParamsFields) {}
 
   static layout(property?: string) {
-    return borsh.struct(
-      [borsh.u8("switchboardStateBump"), borsh.u8("vrfPermissionBump")],
-      property
-    );
+    return borsh.struct([], property);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromDecoded(obj: any) {
-    return new UserInitParams({
-      switchboardStateBump: obj.switchboardStateBump,
-      vrfPermissionBump: obj.vrfPermissionBump,
-    });
+    return new UserInitParams({});
   }
 
   static toEncodable(fields: UserInitParamsFields) {
-    return {
-      switchboardStateBump: fields.switchboardStateBump,
-      vrfPermissionBump: fields.vrfPermissionBump,
-    };
+    return {};
   }
 
   toJSON(): UserInitParamsJSON {
-    return {
-      switchboardStateBump: this.switchboardStateBump,
-      vrfPermissionBump: this.vrfPermissionBump,
-    };
+    return {};
   }
 
   static fromJSON(obj: UserInitParamsJSON): UserInitParams {
-    return new UserInitParams({
-      switchboardStateBump: obj.switchboardStateBump,
-      vrfPermissionBump: obj.vrfPermissionBump,
-    });
+    return new UserInitParams({});
   }
 
   toEncodable() {

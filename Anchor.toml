@@ -1,11 +1,14 @@
+[workspace]
+members = ["."]
+
 [features]
 seeds = false
 
 [programs.localnet]
-switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
+switchboard_vrf_flip = "HC7vQXUpCX2pVwcpTBDnxQQyqzeiHu6u1K16A3gTyoux"
 
 [programs.devnet]
-switchboard_vrf_flip = "FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC"
+switchboard_vrf_flip = "HC7vQXUpCX2pVwcpTBDnxQQyqzeiHu6u1K16A3gTyoux"
 
 [registry]
 url = "https://anchor.projectserum.com"
@@ -31,3 +34,12 @@ address = "Fi8vncGpNKbq62gPo56G4toCehWNy77GgqGkTaAF5Lkk"
 
 [[test.validator.clone]] # sbv2 SbState
 address = "CyZuD7RPDcrqCGbNvLCyqk6Py9cEZTKmNKujfPi3ynDd"
+
+[[test.validator.clone]] # sb attestation programID
+address = "sbattyXrzedoNATfc4L31wC9Mhxsi1BmFhTiN8gDshx"
+
+[[test.validator.clone]] # sb devnet attestation IDL
+address = "5ExuoQR69trmKQfB95fDsUGsUrrChbGq9PFgt8qouncz"
+
+[[test.validator.clone]] # sb devnet programState
+address = "5MFs7RGTjLi1wtKNBFRtuLipCkkjs4YQwRRU9sjnbQbS"

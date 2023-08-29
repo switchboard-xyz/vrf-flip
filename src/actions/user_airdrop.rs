@@ -1,5 +1,5 @@
 use crate::*;
-use anchor_spl::token::{Mint, MintTo, Token, TokenAccount};
+
 const AIRDROP_AMOUNT: u64 = 1_000_000_000;
 const INITIAL_AIRDROP_AMOUNT: u64 = 10 * 1_000_000_000;
 
@@ -93,7 +93,6 @@ impl UserAirdrop<'_> {
         if user.last_airdrop_request_slot == 0 {
             airdrop_amount = INITIAL_AIRDROP_AMOUNT;
         }
-        drop(user);
 
         if ctx.accounts.mint.mint_authority.is_none()
             || ctx.accounts.mint.mint_authority.unwrap() != ctx.accounts.house.key()

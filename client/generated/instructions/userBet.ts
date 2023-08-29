@@ -18,18 +18,15 @@ export interface UserBetAccounts {
   houseVault: PublicKey;
   authority: PublicKey;
   escrow: PublicKey;
-  vrf: PublicKey;
-  oracleQueue: PublicKey;
-  queueAuthority: PublicKey;
-  dataBuffer: PublicKey;
-  permission: PublicKey;
-  vrfEscrow: PublicKey;
-  switchboardProgramState: PublicKey;
-  switchboardProgram: PublicKey;
+  switchboardMint: PublicKey;
+  switchboardFunction: PublicKey;
+  switchboardRequest: PublicKey;
+  switchboardRequestEscrow: PublicKey;
+  switchboardState: PublicKey;
+  switchboardAttestationQueue: PublicKey;
+  switchboard: PublicKey;
   payer: PublicKey;
-  vrfPayer: PublicKey;
   flipPayer: PublicKey;
-  recentBlockhashes: PublicKey;
   systemProgram: PublicKey;
   tokenProgram: PublicKey;
 }
@@ -39,7 +36,8 @@ export const layout = borsh.struct([types.UserBetParams.layout("params")]);
 export function userBet(
   program: { programId: PublicKey },
   args: UserBetArgs,
-  accounts: UserBetAccounts
+  accounts: UserBetAccounts,
+  programId: PublicKey = program.programId
 ) {
   const keys: Array<AccountMeta> = [
     { pubkey: accounts.user, isSigner: false, isWritable: true },
@@ -47,22 +45,23 @@ export function userBet(
     { pubkey: accounts.houseVault, isSigner: false, isWritable: false },
     { pubkey: accounts.authority, isSigner: true, isWritable: true },
     { pubkey: accounts.escrow, isSigner: false, isWritable: true },
-    { pubkey: accounts.vrf, isSigner: false, isWritable: true },
-    { pubkey: accounts.oracleQueue, isSigner: false, isWritable: true },
-    { pubkey: accounts.queueAuthority, isSigner: false, isWritable: false },
-    { pubkey: accounts.dataBuffer, isSigner: false, isWritable: true },
-    { pubkey: accounts.permission, isSigner: false, isWritable: true },
-    { pubkey: accounts.vrfEscrow, isSigner: false, isWritable: true },
+    { pubkey: accounts.switchboardMint, isSigner: false, isWritable: false },
+    { pubkey: accounts.switchboardFunction, isSigner: false, isWritable: true },
+    { pubkey: accounts.switchboardRequest, isSigner: false, isWritable: true },
     {
-      pubkey: accounts.switchboardProgramState,
+      pubkey: accounts.switchboardRequestEscrow,
       isSigner: false,
       isWritable: true,
     },
-    { pubkey: accounts.switchboardProgram, isSigner: false, isWritable: false },
+    { pubkey: accounts.switchboardState, isSigner: false, isWritable: false },
+    {
+      pubkey: accounts.switchboardAttestationQueue,
+      isSigner: false,
+      isWritable: false,
+    },
+    { pubkey: accounts.switchboard, isSigner: false, isWritable: false },
     { pubkey: accounts.payer, isSigner: true, isWritable: true },
-    { pubkey: accounts.vrfPayer, isSigner: false, isWritable: true },
     { pubkey: accounts.flipPayer, isSigner: false, isWritable: true },
-    { pubkey: accounts.recentBlockhashes, isSigner: false, isWritable: false },
     { pubkey: accounts.systemProgram, isSigner: false, isWritable: false },
     { pubkey: accounts.tokenProgram, isSigner: false, isWritable: false },
   ];
@@ -75,10 +74,6 @@ export function userBet(
     buffer
   );
   const data = Buffer.concat([identifier, buffer]).slice(0, 8 + len);
-  const ix = new TransactionInstruction({
-    keys,
-    programId: program.programId,
-    data,
-  });
+  const ix = new TransactionInstruction({ keys, programId, data });
   return ix;
 }

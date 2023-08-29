@@ -1,17 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  createInitializeMintInstruction,
-  createMintToInstruction,
   getMint,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { sleep } from "@switchboard-xyz/common";
 import {
+  FunctionAccount,
   Mint,
-  QueueAccount,
   SwitchboardProgram,
   TransactionObject,
 } from "@switchboard-xyz/solana.js";
@@ -70,26 +67,26 @@ export class House {
     };
   }
 
-  getQueueAccount(switchboardProgram: SwitchboardProgram): QueueAccount {
-    const queueAccount = new QueueAccount(
+  getFunctionAccount(switchboardProgram: SwitchboardProgram): FunctionAccount {
+    const functionAccount = new FunctionAccount(
       switchboardProgram,
-      this.state.switchboardQueue
+      this.state.switchboardFunction
     );
-    return queueAccount;
+    return functionAccount;
   }
 
   static async create(
     program: anchor.Program,
-    switchboardQueue: QueueAccount,
+    switchboardFunction: FunctionAccount,
     mint: Keypair = anchor.web3.Keypair.generate()
   ): Promise<House> {
     const [initHouse, houseKey] = await House.createReq(
       program,
-      switchboardQueue,
+      switchboardFunction,
       mint
     );
 
-    const signature = await switchboardQueue.program.signAndSend(initHouse, {
+    const signature = await switchboardFunction.program.signAndSend(initHouse, {
       skipPreflight: true,
     });
 
@@ -114,10 +111,10 @@ export class House {
 
   static async createReq(
     program: anchor.Program,
-    switchboardQueue: QueueAccount,
+    switchboardFunction: FunctionAccount,
     mint: Keypair = anchor.web3.Keypair.generate()
   ): Promise<[TransactionObject, PublicKey]> {
-    const payer = switchboardQueue.program.walletPubkey;
+    const payer = switchboardFunction.program.walletPubkey;
 
     const [houseKey, houseBump] = House.fromSeeds(program.programId);
 
@@ -136,8 +133,7 @@ export class House {
       {
         house: houseKey,
         authority: payer,
-        switchboardMint: switchboardQueue.program.mint.address,
-        switchboardQueue: switchboardQueue.publicKey,
+        switchboardFunction: switchboardFunction.publicKey,
         mint: mintPubkey,
         houseVault: tokenVault,
         payer: payer,
@@ -171,7 +167,7 @@ export class House {
 
   static async getOrCreate(
     program: anchor.Program,
-    switchboardQueue?: QueueAccount,
+    switchboardFunction?: FunctionAccount,
     mint?: Keypair
   ): Promise<House> {
     try {
@@ -185,13 +181,17 @@ export class House {
       }
     }
 
-    if (!switchboardQueue) {
+    if (!switchboardFunction) {
       throw new Error(
-        `Need to provide Switchboard queueAccount if the House hasnt been initialized yet`
+        `Need to provide Switchboard functionAccount if the House hasnt been initialized yet`
       );
     }
 
-    return House.create(program, switchboardQueue, mint ?? Keypair.generate());
+    return House.create(
+      program,
+      switchboardFunction,
+      mint ?? Keypair.generate()
+    );
   }
 
   async loadMint(): Promise<Mint> {

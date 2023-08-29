@@ -1,8 +1,4 @@
 use crate::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{Mint, MintTo, Token, TokenAccount},
-};
 
 #[derive(Accounts)]
 #[instruction(params: HouseInitParams)] // rpc parameters hint
@@ -19,13 +15,10 @@ pub struct HouseInit<'info> {
     #[account(mut, signer)]
     pub authority: AccountInfo<'info>,
 
-    pub switchboard_mint: Box<Account<'info, Mint>>,
     #[account(
-        mut,
-        constraint = 
-            switchboard_queue.load()?.unpermissioned_vrf_enabled == true @ VrfFlipError::OracleQueueRequiresPermissions
+        constraint = switchboard_function.load()?.authority == authority.key()
     )]
-    pub switchboard_queue: AccountLoader<'info, OracleQueueAccountData>,
+    pub switchboard_function: AccountLoader<'info, FunctionAccountData>,
 
     #[account(
         init_if_needed,
@@ -35,6 +28,7 @@ pub struct HouseInit<'info> {
         mint::freeze_authority = house,
     )]
     pub mint: Account<'info, Mint>,
+
     #[account(
         init_if_needed,
         payer = payer,
@@ -70,12 +64,12 @@ impl HouseInit<'_> {
     pub fn actuate(ctx: &Context<Self>, _params: &HouseInitParams) -> anchor_lang::Result<()> {
         msg!("house_init");
 
-        let house_bump = ctx.bumps.get("house").unwrap().clone();
+        let house_bump = *ctx.bumps.get("house").unwrap();
 
         if ctx.accounts.mint.mint_authority.is_some()
             && ctx.accounts.mint.mint_authority.unwrap() == ctx.accounts.house.key()
         {
-            let house_seeds: &[&[&[u8]]] = &[&[&HOUSE_SEED, &[house_bump]]];
+            let house_seeds: &[&[&[u8]]] = &[&[HOUSE_SEED, &[house_bump]]];
             msg!("minting 100_000_000 tokens to house vault");
             token::mint_to(
                 CpiContext::new_with_signer(
@@ -93,12 +87,10 @@ impl HouseInit<'_> {
 
         let house = &mut ctx.accounts.house.load_init()?;
         house.bump = house_bump;
-        house.authority = ctx.accounts.authority.key().clone();
-        house.switchboard_mint = ctx.accounts.switchboard_mint.key().clone();
-        house.mint = ctx.accounts.mint.key().clone();
-        house.switchboard_queue = ctx.accounts.switchboard_queue.key().clone();
-        house.house_vault = ctx.accounts.house_vault.key().clone();
-        drop(house);
+        house.authority = ctx.accounts.authority.key();
+        house.mint = ctx.accounts.mint.key();
+        house.switchboard_function = ctx.accounts.switchboard_function.key();
+        house.house_vault = ctx.accounts.house_vault.key();
 
         Ok(())
     }

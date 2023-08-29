@@ -1,0 +1,15 @@
+[workspace]
+
+[package]
+name = "vrf-flip"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "vrf-flip"
+path = "src/main.rs"
+
+[dependencies]
+tokio = "^1"
+futures = "0.3"
+switchboard-solana = "0.28"

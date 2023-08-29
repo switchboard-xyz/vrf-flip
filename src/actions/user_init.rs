@@ -1,10 +1,5 @@
 use crate::*;
 
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{spl_token::instruction::AuthorityType, Mint, MintTo, Token, TokenAccount},
-};
-
 #[derive(Accounts)]
 #[instruction(params: UserInitParams)] // rpc parameters hint
 pub struct UserInit<'info> {
@@ -20,17 +15,22 @@ pub struct UserInit<'info> {
         bump
     )]
     pub user: AccountLoader<'info, UserState>,
+
     #[account(
         seeds = [HOUSE_SEED],
         bump = house.load()?.bump,
-        has_one = mint
+        has_one = mint,
+        has_one = switchboard_function,
     )]
     pub house: AccountLoader<'info, HouseState>,
+
     #[account(mut)]
     pub mint: Account<'info, Mint>,
+    
     /// CHECK:
     #[account(mut, signer)]
     pub authority: AccountInfo<'info>,
+    
     #[account(
         init,
         payer = payer,
@@ -38,6 +38,7 @@ pub struct UserInit<'info> {
         token::authority = authority,
     )]
     pub escrow: Account<'info, TokenAccount>,
+
     #[account(
         init,
         payer = payer,
@@ -45,14 +46,39 @@ pub struct UserInit<'info> {
         associated_token::authority = authority,
     )]
     pub reward_address: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub switchboard_function: AccountLoader<'info, FunctionAccountData>,
+    #[account(address = anchor_spl::token::spl_token::native_mint::ID)]
+    pub switchboard_mint: Account<'info, Mint>,
     /// CHECK:
     #[account(
         mut,
-        constraint = 
-            vrf.load()?.authority == user.key() &&
-            vrf.load()?.oracle_queue == house.load()?.switchboard_queue @ VrfFlipError::OracleQueueMismatch
-    )]
-    pub vrf: AccountLoader<'info, VrfAccountData>,
+        signer,
+        owner = system_program.key(),
+        constraint = switchboard_request.data_len() == 0 && switchboard_request.lamports() == 0
+        )]
+    pub switchboard_request: AccountInfo<'info>,
+    /// CHECK:
+    #[account(
+        mut,
+        owner = system_program.key(),
+        constraint = switchboard_request_escrow.data_len() == 0 && switchboard_request_escrow.lamports() == 0
+        )]
+    pub switchboard_request_escrow: AccountInfo<'info>,
+
+    /// CHECK:
+    #[account(
+        seeds = [STATE_SEED],
+        seeds::program = switchboard.key(),
+        bump = switchboard_state.load()?.bump,
+      )]
+    pub switchboard_state: AccountLoader<'info, AttestationProgramState>,
+    pub switchboard_attestation_queue: AccountLoader<'info, AttestationQueueAccountData>,
+    /// CHECK:
+    #[account(executable, address = SWITCHBOARD_ATTESTATION_PROGRAM_ID)]
+    pub switchboard: AccountInfo<'info>,
+
     /// CHECK:
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -67,10 +93,7 @@ pub struct UserInit<'info> {
 }
 
 #[derive(Clone, AnchorSerialize, AnchorDeserialize)]
-pub struct UserInitParams {
-    pub switchboard_state_bump: u8,
-    pub vrf_permission_bump: u8,
-}
+pub struct UserInitParams {}
 
 impl UserInit<'_> {
     pub fn validate(
@@ -78,18 +101,35 @@ impl UserInit<'_> {
         ctx: &Context<Self>,
         _params: &UserInitParams,
     ) -> anchor_lang::Result<()> {
-        let vrf = ctx.accounts.vrf.load()?;
-        if vrf.counter != 0 {
-            return Err(error!(VrfFlipError::InvalidInitialVrfCounter));
-        }
-        if vrf.authority != ctx.accounts.user.key() {
-            return Err(error!(VrfFlipError::InvalidVrfAuthority));
-        }
         Ok(())
     }
 
     pub fn actuate(ctx: &Context<Self>, params: &UserInitParams) -> anchor_lang::Result<()> {
         msg!("user_init");
+
+        // create the switchboard request account and set our user as the PDA
+        let request_init_ctx = FunctionRequestInit {
+            request: ctx.accounts.switchboard_request.clone(),
+            authority: ctx.accounts.user.to_account_info(),
+            function: ctx.accounts.switchboard_function.to_account_info(),
+            function_authority: None,
+            escrow: ctx.accounts.switchboard_request_escrow.to_account_info(),
+            mint: ctx.accounts.switchboard_mint.to_account_info(),
+            state: ctx.accounts.switchboard_state.to_account_info(),
+            attestation_queue: ctx.accounts.switchboard_attestation_queue.to_account_info(),
+            payer: ctx.accounts.payer.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
+            associated_token_program: ctx.accounts.associated_token_program.to_account_info(),
+        };
+        request_init_ctx.invoke(
+            ctx.accounts.switchboard.clone(),
+            &FunctionRequestInitParams {
+                max_container_params_len: Some(512),
+                container_params: vec![],
+                garbage_collection_slot: None,
+            })?;
+            msg!("created switchboard request {}", ctx.accounts.switchboard_request.key());
 
         let user = &mut ctx.accounts.user.load_init()?;
 
@@ -98,19 +138,15 @@ impl UserInit<'_> {
         user.house = ctx.accounts.house.key();
         user.escrow = ctx.accounts.escrow.key();
         user.reward_address = ctx.accounts.reward_address.key();
-        user.vrf = ctx.accounts.vrf.key();
-        user.switchboard_state_bump = params.switchboard_state_bump;
-        user.vrf_permission_bump = params.vrf_permission_bump;
+        user.switchboard_request = ctx.accounts.switchboard_request.key();
+
         user.current_round = Round::default();
         user.last_airdrop_request_slot = 0;
         user.history = History::default();
-
-        drop(user);
-
-        let house = ctx.accounts.house.load()?;
+      
         let house_key = ctx.accounts.house.key().clone();
-        let house_seeds: &[&[&[u8]]] = &[&[&HOUSE_SEED, &[house.bump]]];
-        drop(house);
+        let house_bump = ctx.accounts.house.load()?.bump;
+        let house_seeds: &[&[&[u8]]] = &[&[&HOUSE_SEED, &[house_bump]]];
 
         msg!("setting user escrow authority to the house");
         token::set_authority(

@@ -104,7 +104,7 @@ async function main() {
     "-i",
     /declare_id!(.*);/,
     `declare_id!("${switchboardVrfFlipPid.toString()}");`,
-    path.join(projectRoot, "programs", "vrf-flip", "src", "lib.rs")
+    path.join(projectRoot, "src", "lib.rs")
   );
   shell.sed(
     "-i",

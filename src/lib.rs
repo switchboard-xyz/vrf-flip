@@ -1,5 +1,13 @@
 #![cfg_attr(debug_assertions, allow(dead_code, unused_imports, unused_variables))]
-// #[allow(unaligned_references)]
+#![allow(clippy::large_enum_variant, clippy::result_large_err)]
+
+pub use switchboard_solana::prelude::anchor_spl::token::{
+    self, spl_token::instruction::AuthorityType, transfer as spl_transfer, Mint, MintTo,
+    SetAuthority, TokenAccount, Transfer,
+};
+pub use switchboard_solana::prelude::*;
+pub use switchboard_solana::solana_program::native_token::LAMPORTS_PER_SOL;
+
 pub mod actions;
 pub use actions::*;
 
@@ -9,19 +17,6 @@ pub use impls::*;
 pub mod utils;
 pub use utils::*;
 
-pub use solana_program::program_option::COption;
-
-pub use anchor_lang::prelude::Pubkey;
-pub use anchor_lang::prelude::*;
-pub use anchor_lang::{AnchorDeserialize, AnchorSerialize};
-pub use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount, Transfer};
-// pub use spl_token::instruction::AuthorityType;
-
-pub use switchboard_v2::{
-    AggregatorAccountData, OracleQueueAccountData, PermissionAccountData, SwitchboardDecimal,
-    VrfAccountData, SWITCHBOARD_PROGRAM_ID,
-};
-
 use bytemuck::{Pod, Zeroable};
 
 use num_derive::*;
@@ -29,7 +24,7 @@ use num_derive::*;
 
 use solana_security_txt::security_txt;
 
-declare_id!("FLiPhaxG6sdasFpRoc17u1QKq96g2p2BTNNT1rqXvcnC");
+declare_id!("HC7vQXUpCX2pVwcpTBDnxQQyqzeiHu6u1K16A3gTyoux");
 
 const HOUSE_SEED: &[u8] = b"HOUSESEED";
 const USER_SEED: &[u8] = b"USERSEED";
@@ -51,10 +46,12 @@ pub mod switchboard_vrf_flip {
     pub fn user_init(ctx: Context<UserInit>, params: UserInitParams) -> anchor_lang::Result<()> {
         UserInit::actuate(&ctx, &params)
     }
+
     #[access_control(ctx.accounts.validate(&ctx, &params))]
     pub fn user_bet(ctx: Context<UserBet>, params: UserBetParams) -> anchor_lang::Result<()> {
         UserBet::actuate(ctx, &params)
     }
+
     #[access_control(ctx.accounts.validate(&ctx, &params))]
     pub fn user_settle(
         ctx: Context<UserSettle>,
@@ -62,6 +59,7 @@ pub mod switchboard_vrf_flip {
     ) -> anchor_lang::Result<()> {
         UserSettle::actuate(&ctx, &params)
     }
+
     #[access_control(ctx.accounts.validate(&ctx, &params))]
     pub fn user_airdrop(
         ctx: Context<UserAirdrop>,
@@ -71,7 +69,7 @@ pub mod switchboard_vrf_flip {
     }
 }
 
-#[account(zero_copy)]
+#[account(zero_copy(unsafe))]
 #[derive(AnchorSerialize)]
 pub struct HouseState {
     pub bump: u8,
@@ -81,10 +79,8 @@ pub struct HouseState {
     pub mint: Pubkey,
     // token vault for future use
     pub house_vault: Pubkey,
-    // switchboard queue to request randomness on
-    pub switchboard_queue: Pubkey,
-    // switchboard mint for vrf requests
-    pub switchboard_mint: Pubkey,
+    // switchboard function to use for async operations
+    pub switchboard_function: Pubkey,
     // Buffer for future use
     pub _ebuf: [u8; 1024],
 }
@@ -177,9 +173,7 @@ pub struct UserState {
     pub house: Pubkey,
     pub escrow: Pubkey,
     pub reward_address: Pubkey,
-    pub vrf: Pubkey,
-    pub switchboard_state_bump: u8,
-    pub vrf_permission_bump: u8,
+    pub switchboard_request: Pubkey,
     pub current_round: Round,
     pub last_airdrop_request_slot: u64,
     pub _ebuf: [u8; 1024],

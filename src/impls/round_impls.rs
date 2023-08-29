@@ -1,6 +1,4 @@
 use crate::*;
-use anchor_lang::prelude::*;
-use solana_program::clock::Clock;
 
 impl Round {
     pub fn is_open(&self) -> bool {
@@ -15,10 +13,10 @@ impl Round {
         false
     }
 
-    pub fn settle(&mut self, vrf_result: &[u32]) -> anchor_lang::Result<bool> {
+    pub fn settle(&mut self, function_result: &u32) -> anchor_lang::Result<bool> {
         let clock = Clock::get().unwrap();
 
-        let result = vrf_result[0] % self.game_config.max + self.game_config.min;
+        let result = function_result % self.game_config.max + self.game_config.min;
 
         self.result = result;
         self.settle_slot = clock.slot;
