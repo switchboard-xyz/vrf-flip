@@ -22,7 +22,7 @@ default = []
 [dependencies]
 bytemuck = "1.13.1"
 # switchboard-solana = "0.28.6"
-switchboard-solana = { version = "0.28.7", path = "../sbv3/rust/switchboard-solana" }
+switchboard-solana = { version = "0.28.8", path = "../sbv3/rust/switchboard-solana" }
 num-traits = "0.2"
 num-derive = "0.3"
 solana-security-txt = "1.1.1"
