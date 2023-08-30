@@ -30,6 +30,7 @@ const HOUSE_SEED: &[u8] = b"HOUSESEED";
 const USER_SEED: &[u8] = b"USERSEEDV1";
 
 const MAX_BET_AMOUNT: u64 = 1_000_000_000 * 100;
+const MAX_HISTORY: u32 = 48;
 
 #[program]
 pub mod switchboard_vrf_flip {
@@ -86,9 +87,18 @@ pub struct HouseState {
 }
 
 #[derive(
-    AnchorSerialize, AnchorDeserialize, FromPrimitive, ToPrimitive, Copy, Clone, PartialEq, Eq,
+    AnchorSerialize,
+    AnchorDeserialize,
+    FromPrimitive,
+    ToPrimitive,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
 )]
 pub enum GameType {
+    #[default]
     None,
     CoinFlip,
     SixSidedDiceRoll,
@@ -110,17 +120,21 @@ pub struct GameConfig {
 }
 
 #[derive(
-    AnchorSerialize, AnchorDeserialize, FromPrimitive, ToPrimitive, Copy, Clone, PartialEq, Eq,
+    AnchorSerialize,
+    AnchorDeserialize,
+    FromPrimitive,
+    ToPrimitive,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
 )]
 pub enum RoundStatus {
+    #[default]
     None,
     Awaiting,
     Settled,
-}
-impl Default for RoundStatus {
-    fn default() -> RoundStatus {
-        RoundStatus::None
-    }
 }
 
 #[repr(packed)]
@@ -141,8 +155,6 @@ pub struct Round {
 }
 unsafe impl Pod for Round {}
 unsafe impl Zeroable for Round {}
-
-const MAX_HISTORY: u32 = 48;
 
 #[repr(packed)]
 #[zero_copy(unsafe)]

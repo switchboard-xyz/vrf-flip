@@ -13,7 +13,5 @@ Cargo.lock
 *-secret.json
 
 # Switchboard
-**/.switchboard/*
-!**/.switchboard/networks/
-**/.switchboard/networks/*
-!**/.switchboard/networks/*.config.json
+**/measurement.txt
+**/.env

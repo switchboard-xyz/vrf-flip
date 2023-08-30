@@ -8,7 +8,7 @@ import {
   loadKeypair,
 } from "@switchboard-xyz/solana.js";
 import * as anchor from "@coral-xyz/anchor";
-import { SwitchboardVrfFlip } from "./target/types/switchboard_vrf_flip";
+import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
 import { parseRawMrEnclave, sleep } from "@switchboard-xyz/common";
 import fs from "fs";
 import dotenv from "dotenv";
@@ -19,10 +19,8 @@ const CONTAINER_NAME =
 
 const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
   ? parseRawMrEnclave(process.env.MR_ENCLAVE)
-  : fs.existsSync("switchboard-function/measurement.txt")
-  ? parseRawMrEnclave(
-      fs.readFileSync("switchboard-function/measurement.txt", "utf-8").trim()
-    )
+  : fs.existsSync("measurement.txt")
+  ? parseRawMrEnclave(fs.readFileSync("measurement.txt", "utf-8").trim())
   : undefined;
 
 (async () => {
@@ -105,27 +103,56 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
       throw new Error(`The request script currently only works on devnet`);
     }
 
-    console.log(`Initializing new SwitchboardFunction ...`);
-    const attestationQueue = new AttestationQueueAccount(
-      switchboardProgram,
-      "CkvizjVnm2zA5Wuwan34NhVT3zFc7vqUyGnA6tuEF5aE"
-    );
-    await attestationQueue.loadData();
-    const [functionAccount, functionInitTx] = await FunctionAccount.create(
-      switchboardProgram,
-      {
-        name: "VRF-FLIP",
-        metadata:
-          "https://github.com/switchboard-xyz/vrf-flip/tree/main/switchboard-function",
-        container: CONTAINER_NAME,
-        containerRegistry: "dockerhub",
-        version: "latest",
-        attestationQueue,
-        authority: payer.publicKey,
-        mrEnclave: MrEnclave,
+    // Attempt to load from env file
+    if (process.env.SWITCHBOARD_FUNCTION_PUBKEY) {
+      try {
+        const myFunction = new FunctionAccount(
+          switchboardProgram,
+          process.env.SWITCHBOARD_FUNCTION_PUBKEY
+        );
+        const functionState = await myFunction.loadData();
+        if (functionState.authority.equals(payer.publicKey)) {
+          throw new Error(
+            `$SWITCHBOARD_FUNCTION_PUBKEY.authority mismatch, expected ${payer.publicKey}, received ${functionState.authority}`
+          );
+        }
+        switchboardFunction = myFunction;
+        attestationQueuePubkey = functionState.attestationQueue;
+      } catch (error) {
+        console.error(
+          `$SWITCHBOARD_FUNCTION_PUBKEY in your .env file is incorrect, please fix`
+        );
       }
-    );
-    console.log(`[TX] function_init: ${functionInitTx}`);
+    }
+
+    if (!switchboardFunction || !attestationQueuePubkey) {
+      console.log(`Initializing new SwitchboardFunction ...`);
+      const attestationQueue = new AttestationQueueAccount(
+        switchboardProgram,
+        "CkvizjVnm2zA5Wuwan34NhVT3zFc7vqUyGnA6tuEF5aE"
+      );
+      await attestationQueue.loadData();
+      const [functionAccount, functionInitTx] = await FunctionAccount.create(
+        switchboardProgram,
+        {
+          name: "VRF-FLIP",
+          metadata:
+            "https://github.com/switchboard-xyz/vrf-flip/tree/main/switchboard-function",
+          container: CONTAINER_NAME,
+          containerRegistry: "dockerhub",
+          version: "latest",
+          attestationQueue,
+          authority: payer.publicKey,
+          mrEnclave: MrEnclave,
+        }
+      );
+      console.log(`[TX] function_init: ${functionInitTx}`);
+
+      // TODO: Update .env file
+
+      switchboardFunction = functionAccount;
+      attestationQueuePubkey = attestationQueue.publicKey;
+    }
 
     const mintKeypair = anchor.web3.Keypair.generate();
     const houseVault = anchor.utils.token.associatedAddress({
@@ -137,7 +164,7 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
       .accounts({
         house: housePubkey,
         authority: payer.publicKey,
-        switchboardFunction: functionAccount.publicKey,
+        switchboardFunction: switchboardFunction.publicKey,
         mint: mintKeypair.publicKey,
         houseVault: houseVault,
         payer: payer.publicKey,
@@ -146,10 +173,8 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
       .rpc();
     console.log(`[TX] house_init: ${tx}`);
 
-    switchboardFunction = functionAccount;
     flipMintPubkey = mintKeypair.publicKey;
     houseVaultPubkey = houseVault;
-    attestationQueuePubkey = attestationQueue.publicKey;
   }
 
   const [userPubkey] = PublicKey.findProgramAddressSync(
@@ -258,11 +283,14 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
   let requestSettleTime = requestPostTxnTime;
   console.log(`[TX] user_bet: ${tx}\n`);
 
-  let userState = await program.account.userState.fetch(userPubkey);
+  let userState = await program.account.userState.fetch(
+    userPubkey,
+    "processed"
+  );
   let totalWaitTime = 0;
   while (totalWaitTime < 45_000) {
     const start = Date.now();
-    userState = await program.account.userState.fetch(userPubkey);
+    userState = await program.account.userState.fetch(userPubkey, "processed");
     if (
       userState.currentRound.requestSlot.toNumber() >= currentSlot &&
       userState.currentRound.status.settled

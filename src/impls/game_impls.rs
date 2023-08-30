@@ -44,9 +44,3 @@ impl GameType {
     //     }
     // }
 }
-
-impl Default for GameType {
-    fn default() -> GameType {
-        GameType::None
-    }
-}

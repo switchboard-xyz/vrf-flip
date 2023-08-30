@@ -1,7 +1,5 @@
 use crate::*;
 
-const VRF_REQUEST_COST: u64 = 2 * LAMPORTS_PER_SOL / 1000;
-
 #[derive(Accounts)]
 #[instruction(params: UserBetParams)] // rpc parameters hint
 pub struct UserBet<'info> {

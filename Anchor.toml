@@ -21,7 +21,8 @@ wallet = "~/switchboard_environments_v2/devnet/upgrade_authority/upgrade_authori
 
 [scripts]
 test = "npx mocha --extension ts --require ts-node/register -t 1000000 tests/**/*.test.ts  --exit"
-request = "tsx ./request.ts"
+request = "tsx ./scripts/request.ts"
+update-measurement = "tsx ./scripts/update-measurement.ts"
 
 [test.validator]
 url = "https://api.mainnet-beta.solana.com"
