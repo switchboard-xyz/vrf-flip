@@ -10,10 +10,31 @@ import {
 } from "@switchboard-xyz/solana.js";
 import * as anchor from "@coral-xyz/anchor";
 import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
-import { parseRawMrEnclave, sleep } from "@switchboard-xyz/common";
+import {
+  BNtoDateTimeString,
+  parseRawMrEnclave,
+  promiseWithTimeout,
+  sleep,
+  toDateTimeString,
+} from "@switchboard-xyz/common";
 import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
+
+interface UserBetSettledEvent {
+  roundId: anchor.BN;
+  user: PublicKey;
+  userWon: boolean;
+  gameType: {
+    coinFlip?: {};
+  };
+  betAmount: anchor.BN;
+  escrowChange: anchor.BN;
+  guess: number;
+  result: number;
+  slot: anchor.BN;
+  timestamp: anchor.BN;
+}
 
 // const CONTAINER_NAME =
 //   process.env.CONTAINER_NAME ?? "gallynaut/solana-vrf-flip";
@@ -57,7 +78,6 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
 
   try {
     const houseState = await program.account.houseState.fetch(housePubkey);
-    console.log(`HOUSE already initialized`);
     console.log(`FUNCTION: ${houseState.switchboardFunction}`);
 
     flipMintPubkey = houseState.mint;
@@ -210,7 +230,6 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
   let userRewardAddressPubkey: PublicKey;
   try {
     const userState = await program.account.userState.fetch(userPubkey);
-    console.log(`USER already initialized`);
     console.log(`REQUEST: ${userState.switchboardRequest}`);
 
     switchboardRequest = new FunctionRequestAccount(
@@ -268,81 +287,101 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
     userRewardAddressPubkey = rewardAddress;
   }
 
-  const currentSlot = await provider.connection.getSlot();
-
   // NOW LETS TRIGGER THE REQUEST
   const requestStartTime = Date.now();
-  const tx = await program.methods
-    .userBet({
-      gameType: 1, // CoinFlip
-      userGuess: 1,
-      betAmount: new anchor.BN(1),
-    })
-    .accounts({
-      user: userPubkey,
-      house: housePubkey,
-      houseVault: houseVaultPubkey,
-      authority: payer.publicKey,
-      escrow: userEscrowPubkey,
-      switchboardMint: switchboardProgram.mint.address,
-      switchboardFunction: switchboardFunction.publicKey,
-      switchboardRequest: switchboardRequest.publicKey,
-      switchboardRequestEscrow: switchboardRequestEscrowPubkey,
-      switchboardState: switchboardProgram.attestationProgramState.publicKey,
-      switchboardAttestationQueue: attestationQueuePubkey,
-      switchboard: switchboardProgram.attestationProgramId,
-      payer: payer.publicKey,
-      flipPayer: userRewardAddressPubkey,
-    })
-    .rpc();
+  let listener = null;
+  let betTx = "";
+  const [event, slot] = (await promiseWithTimeout(
+    45_000,
+    new Promise(async (resolve, _reject) => {
+      listener = program.addEventListener("UserBetSettled", (event, slot) => {
+        resolve([event, slot]);
+      });
+      program.methods
+        .userBet({
+          gameType: 1, // CoinFlip
+          userGuess: 1,
+          betAmount: new anchor.BN(1),
+        })
+        .accounts({
+          user: userPubkey,
+          house: housePubkey,
+          houseVault: houseVaultPubkey,
+          authority: payer.publicKey,
+          escrow: userEscrowPubkey,
+          switchboardMint: switchboardProgram.mint.address,
+          switchboardFunction: switchboardFunction.publicKey,
+          switchboardRequest: switchboardRequest.publicKey,
+          switchboardRequestEscrow: switchboardRequestEscrowPubkey,
+          switchboardState:
+            switchboardProgram.attestationProgramState.publicKey,
+          switchboardAttestationQueue: attestationQueuePubkey,
+          switchboard: switchboardProgram.attestationProgramId,
+          payer: payer.publicKey,
+          flipPayer: userRewardAddressPubkey,
+        })
+        .rpc()
+        .then((tx) => {
+          console.log(`[TX] user_bet: ${tx}\n`);
+          betTx = tx;
+        });
+    }),
+    "Timed out waiting for 'UserBetSettled' event"
+  ).catch(async (err) => {
+    const userState = await program.account.userState.fetch(
+      userPubkey,
+      "processed"
+    );
+    console.log(userState);
+    if (listener) {
+      await program.removeEventListener(listener).then(() => {
+        listener = null;
+      });
+    }
+    throw err;
+  })) as unknown as [UserBetSettledEvent, number];
   const requestPostTxnTime = Date.now();
   let requestSettleTime = requestPostTxnTime;
-  console.log(`[TX] user_bet: ${tx}\n`);
 
-  let userState = await program.account.userState.fetch(
-    userPubkey,
-    "processed"
-  );
-  let totalWaitTime = 0;
-  while (totalWaitTime < 45_000) {
-    const start = Date.now();
-    userState = await program.account.userState.fetch(userPubkey, "processed");
-    if (
-      userState.currentRound.requestSlot.toNumber() >= currentSlot &&
-      userState.currentRound.status.settled
-    ) {
-      requestSettleTime = Date.now();
-      totalWaitTime += Date.now() - start;
-      break;
-    } else {
-      // small delay
-      await sleep(100);
-      totalWaitTime += Date.now() - start;
-      if (totalWaitTime >= 45_000) {
-        throw new Error(`Timed out waiting for request to settle!`);
-      }
-    }
-  }
+  await program.removeEventListener(listener).then(() => {
+    listener = null;
+  });
 
-  if (userState.currentRound.guess === userState.currentRound.result) {
+  if (event.userWon) {
     console.log(`You won!`);
   } else {
     console.log(`Sorry, you lost!`);
   }
 
+  const userState = await program.account.userState.fetch(userPubkey);
+
   console.log(`\n### METRICS`);
-  console.log(
-    `start:   ${((requestStartTime - requestStartTime) / 1000).toFixed(3)}`
-  );
-  console.log(
-    `postTx:  ${((requestPostTxnTime - requestStartTime) / 1000).toFixed(3)}`
-  );
-  console.log(
-    `settled: ${((requestSettleTime - requestStartTime) / 1000).toFixed(3)}`
-  );
 
   const fullDuration = (requestSettleTime - requestStartTime) / 1000;
-  const confirmDuration = (requestSettleTime - requestPostTxnTime) / 1000;
-  console.log(`Full Roundtrip: ${fullDuration.toFixed(3)}`);
-  console.log(`Settle Request: ${confirmDuration.toFixed(3)}`);
+  console.log(`Settlement Time: ${fullDuration.toFixed(3)}`);
+  console.log(
+    `Settlement Slots: ${event.slot - userState.currentRound.requestSlot}`
+  );
+
+  if (fs.existsSync("metrics.csv")) {
+    fs.appendFileSync(
+      "metrics.csv",
+      `${BNtoDateTimeString(event.timestamp)},${event.roundId},${
+        event.userWon
+      },${event.result},${userState.currentRound.requestSlot},${event.slot},${
+        event.slot - userState.currentRound.requestSlot
+      },${fullDuration.toFixed(3)},${betTx}\n`
+    );
+  } else {
+    fs.writeFileSync(
+      "metrics.csv",
+      `timestamp,roundId,userWon,result,requestSlot,settledSlot,slotDifference,settlementTime,tx\n${BNtoDateTimeString(
+        event.timestamp
+      )},${event.roundId},${event.userWon},${event.result},${
+        userState.currentRound.requestSlot
+      },${event.slot},${
+        event.slot - userState.currentRound.requestSlot
+      },${fullDuration.toFixed(3)},${betTx}\n`
+    );
+  }
 })();

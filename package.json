@@ -4,6 +4,7 @@
   "version": "0.2.0",
   "license": "MIT",
   "scripts": {
+    "postinstall": "anchor keys sync",
     "request": "anchor run request",
     "update-measurement": "anchor run update-measurement",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
