@@ -4,6 +4,7 @@ import {
   DEVNET_GENESIS_HASH,
   FunctionAccount,
   FunctionRequestAccount,
+  MAINNET_GENESIS_HASH,
   SwitchboardProgram,
   loadKeypair,
 } from "@switchboard-xyz/solana.js";
@@ -14,8 +15,8 @@ import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 
-const CONTAINER_NAME =
-  process.env.CONTAINER_NAME ?? "gallynaut/solana-vrf-flip";
+// const CONTAINER_NAME =
+//   process.env.CONTAINER_NAME ?? "gallynaut/solana-vrf-flip";
 
 const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
   ? parseRawMrEnclave(process.env.MR_ENCLAVE)
@@ -98,10 +99,6 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
     if (!`${error}`.includes("Account does not exist or has no data")) {
       throw error;
     }
-    const genesisHash = await provider.connection.getGenesisHash();
-    if (genesisHash !== DEVNET_GENESIS_HASH) {
-      throw new Error(`The request script currently only works on devnet`);
-    }
 
     // Attempt to load from env file
     if (process.env.SWITCHBOARD_FUNCTION_PUBKEY) {
@@ -126,10 +123,27 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
     }
 
     if (!switchboardFunction || !attestationQueuePubkey) {
+      if (!process.env.CONTAINER_NAME) {
+        throw new Error(
+          `You need to set CONTAINER_NAME in your .env file to create a new Switchboard Function. Example:\n\tCONTAINER_NAME=switchboardlabs/solana-vrf-flip`
+        );
+      }
+      const genesisHash = await provider.connection.getGenesisHash();
+      const attestationQueueAddress =
+        genesisHash === MAINNET_GENESIS_HASH
+          ? ""
+          : genesisHash === DEVNET_GENESIS_HASH
+          ? ""
+          : undefined;
+      if (!attestationQueueAddress) {
+        throw new Error(
+          `The request script currently only works on mainnet-beta or devnet (if SWITCHBOARD_FUNCTION_PUBKEY is not set in your .env file))`
+        );
+      }
       console.log(`Initializing new SwitchboardFunction ...`);
       const attestationQueue = new AttestationQueueAccount(
         switchboardProgram,
-        "CkvizjVnm2zA5Wuwan34NhVT3zFc7vqUyGnA6tuEF5aE"
+        attestationQueueAddress
       );
       await attestationQueue.loadData();
       const [functionAccount, functionInitTx] = await FunctionAccount.create(
@@ -138,7 +152,7 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
           name: "VRF-FLIP",
           metadata:
             "https://github.com/switchboard-xyz/vrf-flip/tree/main/switchboard-function",
-          container: CONTAINER_NAME,
+          container: process.env.CONTAINER_NAME,
           containerRegistry: "dockerhub",
           version: "latest",
           attestationQueue,
@@ -148,7 +162,9 @@ const MrEnclave: Uint8Array | undefined = process.env.MR_ENCLAVE
       );
       console.log(`[TX] function_init: ${functionInitTx}`);
 
-      // TODO: Update .env file
+      console.log(
+        `\nMake sure to add the following to your .env file:\n\tSWITCHBOARD_FUNCTION_PUBKEY=${functionAccount.publicKey}\n\n`
+      );
 
       switchboardFunction = functionAccount;
       attestationQueuePubkey = attestationQueue.publicKey;
