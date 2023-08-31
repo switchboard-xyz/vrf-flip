@@ -9,7 +9,7 @@ export default defineConfig((config) => ({
   define: { 'process.env.NODE_ENV': loadEnv(config.mode, process.cwd(), '').APP_ENV },
   plugins: [react(), viteTsconfigPaths(), svgrPlugin(), nodePolyfills({ protocolImports: true })],
   // Open the project in a browser tab when Vite server starts.
-  server: { host: true, open: true },
+  server: { host: true, open: true, port: 3000 },
   esbuild: { define: { global: 'globalThis' } },
   optimizeDeps: {
     esbuildOptions: { define: { global: 'globalThis' } },
