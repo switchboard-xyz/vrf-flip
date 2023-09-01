@@ -1,9 +1,9 @@
-import { useConnectedWallet, useWalletKit } from '@gokiprotocol/walletkit';
 import { Box } from '@mui/material';
 import React from 'react';
 import { hooks, thunks } from '../data';
 import { NAVBAR_HEIGHT, NAVBAR_HORZ_PAD, zIndices } from '../util/const';
 import css from '../util/css';
+import { WalletConnectButton, WalletDisconnectButton, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 const Title: React.FC = () => {
   return (
@@ -17,66 +17,6 @@ const Title: React.FC = () => {
     >
       🎲 vrf-demo
     </span>
-  );
-};
-
-const WalletButton: React.FC = () => {
-  const walletKit = useWalletKit();
-  const wallet = useConnectedWallet();
-  const dispatch = hooks.useThunkDispatch();
-  const [hovered, setHovered] = React.useState(false);
-
-  const disconnect = React.useCallback(() => {
-    if (wallet) {
-      dispatch(thunks.log({ message: `Disconnecting wallet ${wallet.publicKey.toBase58()}` }));
-      wallet.disconnect();
-    }
-  }, [dispatch, wallet]);
-
-  const content = React.useMemo(() => {
-    if (wallet) {
-      if (hovered) return 'Disconnect';
-
-      const pubkey = wallet.publicKey.toBase58();
-      const truncatedPubkey = `${pubkey.slice(0, 5)}...${pubkey.slice(-5)}`;
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          Connected as
-          <span style={{ fontFamily: 'Fira Code' }}>{truncatedPubkey}</span>
-        </div>
-      );
-    }
-    return 'Connect Wallet';
-  }, [wallet, hovered]);
-
-  return (
-    <Box
-      sx={{
-        ...css.noUserSelect,
-        ...css.walletText,
-        position: 'float',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '40px',
-        minWidth: '140px',
-        color: 'white',
-        textTransform: 'none',
-        lineHeight: 1.2,
-        borderStyle: 'double',
-        '&:hover': {
-          backgroundColor: '#FFFFFF28',
-          cursor: 'pointer',
-        },
-      }}
-      onMouseOver={() => setHovered && setHovered(true)}
-      onMouseEnter={() => setHovered && setHovered(true)}
-      onMouseOut={() => setHovered && setHovered(false)}
-      onMouseLeave={() => setHovered && setHovered(false)}
-      onClick={wallet ? disconnect : walletKit.connect}
-    >
-      {content}
-    </Box>
   );
 };
 
@@ -104,7 +44,7 @@ const NavigationBar: React.FC = () => {
         }}
       >
         <Title />
-        <WalletButton />
+        <WalletMultiButton />
       </div>
     </Box>
   );

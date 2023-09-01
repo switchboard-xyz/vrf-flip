@@ -1,4 +1,3 @@
-import { useConnectedWallet } from '@gokiprotocol/walletkit';
 import * as anchor from '@coral-xyz/anchor';
 import { ConnectedWallet } from '@saberhq/use-solana';
 import * as spl from '@solana/spl-token';
@@ -13,6 +12,7 @@ import { FlipProgram } from '../../api';
 import { ThunkDispatch } from '../../types';
 import { Severity } from '../../util/const';
 import { GameState } from '../store/gameStateReducer';
+import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
 
 /*
  * Denominator for the ribs token
@@ -111,13 +111,13 @@ interface PrivateApiInterface extends ApiInterface {
 
 class ApiState implements PrivateApiInterface {
   private readonly dispatch: ThunkDispatch;
-  private readonly wallet: ConnectedWallet;
+  private readonly wallet: WalletContextState;
   private readonly accountChangeListeners: number[] = [];
   private _program: { [key in Cluster]?: api.FlipProgram } = {};
   private _user?: api.User;
   private _gameState?: GameState;
 
-  constructor(wallet: ConnectedWallet, dispatch: ThunkDispatch) {
+  constructor(wallet: WalletContextState, dispatch: ThunkDispatch) {
     this.wallet = wallet;
     this.dispatch = dispatch;
 
@@ -196,6 +196,7 @@ class ApiState implements PrivateApiInterface {
     return (async () => {
       const pubkey = this.wallet.publicKey;
       const program = await this.program;
+      if (!pubkey) return {} as api.User;
       return api.User.load(program, pubkey)
         .then(
           (user) =>
@@ -281,9 +282,11 @@ class ApiState implements PrivateApiInterface {
     // User needs to be logged in and have accounts.
     const user = await this.user;
 
+    const pubkey = this.wallet.publicKey;
+    if (!pubkey) return;
     // Build out and sign transactions.
     this.log(`Building airdrop request...`);
-    const request = await user.airdropReq(this.wallet.publicKey);
+    const request = await user.airdropReq(pubkey);
     await this.packSignAndSubmit([request]);
 
     await this.playPrompt();
@@ -305,6 +308,7 @@ class ApiState implements PrivateApiInterface {
    * Play the game.
    */
   private playGame = async (args: string[]) => {
+    if (!this.wallet.publicKey) throw ApiError.userAccountMissing();
     const game = games[this.gameMode];
 
     // Gather necessary programs.
@@ -333,6 +337,7 @@ class ApiState implements PrivateApiInterface {
   };
 
   private packSignAndSubmit = async (transactions: switchboard.TransactionObject[]) => {
+    if (!this.wallet.signAllTransactions) return;
     const program = await this.program;
     const packed = switchboard.TransactionObject.pack(transactions);
 
@@ -384,6 +389,7 @@ class ApiState implements PrivateApiInterface {
    * Fetches the user's current SOL balance.
    */
   private watchUserAccounts = async () => {
+    if (!this.wallet.publicKey) return;
     const onSolAccountChange = (account: anchor.web3.AccountInfo<Buffer> | null) => {
       this.dispatch(thunks.setUserBalance({ sol: account ? account.lamports / LAMPORTS_PER_SOL : undefined }));
     };
@@ -499,7 +505,7 @@ const useApi = () => React.useContext(ApiContext);
  */
 export const ApiProvider: React.FC<React.PropsWithChildren> = (props) => {
   const dispatch = hooks.useThunkDispatch();
-  const wallet = useConnectedWallet();
+  const wallet = useWallet();
   const gameState = useSelector((store: Store) => store.gameState);
   const [stateWallet, setStateWallet] = React.useState(wallet);
 
