@@ -1,12 +1,12 @@
-import { useConnectedWallet } from '@gokiprotocol/walletkit';
 import _ from 'lodash';
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { Store } from '../../../data';
 import css from '../../../util/css';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const UserBalance: React.FC = () => {
-  const wallet = useConnectedWallet();
+  const wallet = useWallet();
   const balances = useSelector((store: Store) => store.gameState.userBalances);
   const formatValue = React.useCallback((balance: any) => (_.isNumber(balance) ? balance.toPrecision(5) : '--'), []);
 

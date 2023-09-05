@@ -9,6 +9,5 @@ export enum Severity {
 }
 
 export const zIndices = {
-  ConnectWalletDialog: 99999,
   Navbar: 10,
 };

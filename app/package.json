@@ -6,8 +6,10 @@
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
-    "@gokiprotocol/walletkit": "^1.7.3",
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-adapter-react": "^0.15.34",
     "@solana/wallet-adapter-react-ui": "^0.9.33",
+    "@solana/wallet-adapter-wallets": "0.19.20",
     "@mui/material": "^5.14.7",
     "@reach/dialog": "^0.18.0",
     "@reduxjs/toolkit": "^1.9.5",
