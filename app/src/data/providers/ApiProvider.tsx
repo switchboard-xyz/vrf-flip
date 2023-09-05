@@ -53,6 +53,7 @@ enum ApiErrorType {
   General,
   AnchorError,
   GetFlipProgram,
+  UserNotConnected,
   UserAccountMissing,
   SendTransactionError,
   WalletSignature,
@@ -67,6 +68,8 @@ class ApiError extends Error {
   static general = (message: string) => new ApiError(ApiErrorType.General, message);
   static getFlipProgram = (cluster: Cluster) =>
     new ApiError(ApiErrorType.GetFlipProgram, `Couldn't get FlipProgram from the network (${cluster}).`);
+  static userNotConnected = () =>
+    new ApiError(ApiErrorType.UserNotConnected, "No wallet detected. Please connect a wallet and try again.");
   static userAccountMissing = () =>
     new ApiError(
       ApiErrorType.UserAccountMissing,
@@ -194,18 +197,19 @@ class ApiState implements PrivateApiInterface {
     if (this._user) return Promise.resolve(this._user);
 
     return (async () => {
-      const pubkey = this.wallet.publicKey;
+      const userPublicKey = this.wallet.publicKey;
+      if (!userPublicKey) throw ApiError.userNotConnected();
+
       const program = await this.program;
-      if (!pubkey) return {} as api.User;
-      return api.User.load(program, pubkey)
+      return api.User.load(program, userPublicKey)
         .then(
           (user) =>
-            (this._user ??= (() => {
-              // If there is not yet a known user, set it, log it, and return it.
-              this.log(`Accounts retrieved for user: ${pubkey}`);
-              this.watchUserAccounts().then(this.playPrompt);
-              return user;
-            })())
+          (this._user ??= (() => {
+            // If there is not yet a known user, set it, log it, and return it.
+            this.log(`Accounts retrieved for user: ${userPublicKey.toBase58()}`);
+            this.watchUserAccounts().then(this.playPrompt);
+            return user;
+          })())
         )
         .catch((e) => {
           if (e instanceof ApiError) throw e;
@@ -259,16 +263,17 @@ class ApiState implements PrivateApiInterface {
 
     // Gather necessary programs.
     const program = await this.program;
-    const anchorProvider = new anchor.AnchorProvider(program.provider.connection, this.wallet, {});
+    const userPublicKey = this.wallet.publicKey;
+    if (!userPublicKey) throw ApiError.userNotConnected();
 
     this.log(`Checking if user needs airdrop...`);
-    api.verifyPayerBalance(program.provider.connection, anchorProvider.publicKey);
+    await api.verifyPayerBalance(program.provider.connection, userPublicKey);
 
     // If there are no known user accounts, begin accounts set up.
     this.log(`Building user accounts...`);
 
     // Build out and sign transactions.
-    const request = await api.User.createReq(program, anchorProvider.wallet.publicKey);
+    const request = await api.User.createReq(program, userPublicKey);
     await this.packSignAndSubmit(request[0]);
 
     // Try to load the new user accounts.
@@ -282,11 +287,9 @@ class ApiState implements PrivateApiInterface {
     // User needs to be logged in and have accounts.
     const user = await this.user;
 
-    const pubkey = this.wallet.publicKey;
-    if (!pubkey) return;
     // Build out and sign transactions.
     this.log(`Building airdrop request...`);
-    const request = await user.airdropReq(pubkey);
+    const request = await user.airdropReq(user.publicKey);
     await this.packSignAndSubmit([request]);
 
     await this.playPrompt();
@@ -308,7 +311,6 @@ class ApiState implements PrivateApiInterface {
    * Play the game.
    */
   private playGame = async (args: string[]) => {
-    if (!this.wallet.publicKey) throw ApiError.userAccountMissing();
     const game = games[this.gameMode];
 
     // Gather necessary programs.
@@ -328,7 +330,7 @@ class ApiState implements PrivateApiInterface {
 
     this.log(`Building bet request...`);
     const request = await user
-      .placeBetReq(this.gameMode, guess, new anchor.BN(bet).mul(new anchor.BN(RIBS_PER_RACK)), this.wallet.publicKey)
+      .placeBetReq(this.gameMode, guess, new anchor.BN(bet).mul(new anchor.BN(RIBS_PER_RACK)), user.publicKey)
       .then((request) => this.packSignAndSubmit([request]))
       .catch((error) => {
         console.error(error);
@@ -389,7 +391,6 @@ class ApiState implements PrivateApiInterface {
    * Fetches the user's current SOL balance.
    */
   private watchUserAccounts = async () => {
-    if (!this.wallet.publicKey) return;
     const onSolAccountChange = (account: anchor.web3.AccountInfo<Buffer> | null) => {
       this.dispatch(thunks.setUserBalance({ sol: account ? account.lamports / LAMPORTS_PER_SOL : undefined }));
     };
@@ -406,13 +407,13 @@ class ApiState implements PrivateApiInterface {
     // Grab initial values.
     const program = await this.program;
     const user = await this.user;
-    await program.provider.connection.getAccountInfo(this.wallet.publicKey).then(onSolAccountChange);
+    await program.provider.connection.getAccountInfo(user.publicKey).then(onSolAccountChange);
     await program.provider.connection.getAccountInfo(user.state.rewardAddress).then(onRibsAccountChange);
 
     // Listen for account changes.
     this.accountChangeListeners.push(
       ...[
-        program.provider.connection.onAccountChange(this.wallet.publicKey, onSolAccountChange),
+        program.provider.connection.onAccountChange(user.publicKey, onSolAccountChange),
         program.provider.connection.onAccountChange(user.state.rewardAddress, onRibsAccountChange),
       ]
     );
@@ -485,7 +486,7 @@ class NoUserApiState implements PrivateApiInterface {
 
   public handleCommand = async () => this.log();
 
-  public dispose = async () => {};
+  public dispose = async () => { };
 
   /**
    * Log to DisplayLogger.
@@ -511,13 +512,13 @@ export const ApiProvider: React.FC<React.PropsWithChildren> = (props) => {
 
   // The api is rebuilt only when the connected pubkey changes
   const api = React.useMemo(
-    () => (stateWallet ? new ApiState(stateWallet, dispatch) : new NoUserApiState(dispatch)),
+    () => (stateWallet.publicKey ? new ApiState(stateWallet, dispatch) : new NoUserApiState(dispatch)),
     [stateWallet, dispatch]
   );
 
   // If a new wallet has been set, dispose of the old api object and set the new wallet state.
   React.useEffect(() => {
-    if (wallet !== stateWallet) api.dispose().then(() => setStateWallet(wallet));
+    if (wallet.publicKey?.toBase58() !== stateWallet.publicKey?.toBase58()) setStateWallet(wallet);
   }, [api, wallet, stateWallet]);
 
   React.useEffect(() => {
