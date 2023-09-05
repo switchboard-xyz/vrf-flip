@@ -1,5 +1,4 @@
 import * as anchor from '@coral-xyz/anchor';
-import { ConnectedWallet } from '@saberhq/use-solana';
 import * as spl from '@solana/spl-token';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import * as switchboard from '@switchboard-xyz/solana.js';
