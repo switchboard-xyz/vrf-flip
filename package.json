@@ -1,42 +1,44 @@
 {
   "name": "switchboard-vrf-flip",
   "description": "Switchboard demo of verifiable randomness",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "scripts": {
-    "client:gen": "./scripts/setup-program.js",
+    "postinstall": "anchor keys sync",
+    "request": "anchor run request",
+    "update-measurement": "anchor run update-measurement",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "postinstall": "cd app && yarn install",
     "start": "cd app && yarn start",
-    "build": "anchor build && npm run client:gen && npx prettier client/generated --write",
+    "build": "make build",
     "test": "anchor test"
   },
-  "bin": {
-    "sbv2-vrf-flip": "./cli.ts"
-  },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.27.0",
-    "@coral-xyz/borsh": "^0.27.0",
-    "@solana/spl-token": "^0.3.6",
-    "@solana/web3.js": "^1.74.0",
-    "@switchboard-xyz/common": "^2.2.3",
+    "@coral-xyz/anchor": "=0.28.0",
+    "@coral-xyz/borsh": "^0.28.0",
+    "@solana/spl-token": "^0.3.8",
+    "@solana/web3.js": "^1.78.4",
+    "@switchboard-xyz/common": "^2.3.4",
     "@switchboard-xyz/oracle": "^2.1.13",
-    "@switchboard-xyz/solana.js": "^2.2.0",
+    "@switchboard-xyz/solana.js": "^2.5.6",
     "chalk": "4"
   },
   "devDependencies": {
     "@types/chai": "^4.3.0",
     "@types/mocha": "^9.0.0",
-    "@types/node": "^18.0.6",
+    "@types/node": "^20.5.7",
     "chai": "^4.3.4",
     "cli-spinner": "^0.2.10",
+    "dotenv": "^16.3.1",
     "mocha": "^9.0.3",
+    "npm-run-all": "^4.1.5",
     "prettier": "^2.6.2",
     "shelljs": "^0.8.5",
     "shx": "^0.3.4",
+    "toml": "^3.0.0",
     "ts-mocha": "^9.0.2",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.3"
+    "tsx": "^3.12.7",
+    "typescript": "^5.2.2"
   }
 }

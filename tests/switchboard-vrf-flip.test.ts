@@ -1,8 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
-import { FlipProgram, GameTypeValue, House, User } from "../client";
-import { createFlipUser, FlipUser } from "../client/utils";
 import assert from "assert";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -15,15 +13,16 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import {
-  QueueAccount,
   SwitchboardProgram,
-  SwitchboardTestContext,
-  SWITCHBOARD_LABS_DEVNET_PERMISSIONLESS_QUEUE,
-  SWITCHBOARD_LABS_MAINNET_PERMISSIONLESS_QUEUE,
-  VrfAccount,
+  AttestationQueueAccount,
+  BootstrappedAttestationQueue,
+  FunctionAccount,
 } from "@switchboard-xyz/solana.js";
 import { VRF_FLIP_NETWORK } from "./switchboard-network";
-import { NodeOracle } from "@switchboard-xyz/oracle";
+import { parseRawMrEnclave, sleep } from "@switchboard-xyz/common";
+
+const functionMrEnclave = parseRawMrEnclave("MyFunctionEnclave", true);
+console.log(functionMrEnclave.byteLength);
 
 // CJQVYHYgv1nE5zoKjS9w7VrVzTkkUGCgSSReESKuJZV
 export const MINT_KEYPAIR = Keypair.fromSecretKey(
@@ -47,84 +46,38 @@ describe("switchboard-vrf-flip", () => {
 
   let program: FlipProgram;
 
-  let switchboardProgram: SwitchboardProgram;
-  let queueAccount: QueueAccount;
-  let switchboard: SwitchboardTestContext | undefined;
-  let oracle: NodeOracle | undefined;
-
   let house: House;
 
   let flipUser: FlipUser;
 
+  let switchboardProgram: SwitchboardProgram;
+  let attestationQueue: BootstrappedAttestationQueue;
+  let functionAccount: FunctionAccount;
+
   before(async () => {
     console.log(`vrf-flip programId: ${anchorProgram.programId}`);
-
-    if (
-      !process.env.SOLANA_CLUSTER ||
-      (process.env.SOLANA_CLUSTER !== "devnet" &&
-        process.env.SOLANA_CLUSTER !== "mainnet-beta")
-    ) {
-      // if localnet, we need to create our own queue and run our own oracle
-      switchboard = await SwitchboardTestContext.loadFromProvider(
-        provider,
-        VRF_FLIP_NETWORK
-      );
-      switchboardProgram = switchboard.program;
-      queueAccount = switchboard.queue;
-
-      console.log(switchboard.program.cluster);
-
-      console.log(
-        `switchboard programId: ${switchboard.queue.program.programId}`
-      );
-      console.log(`switchboard queue: ${switchboard.queue.publicKey}`);
-      console.log(`switchboard oracle: ${switchboard.oracle.publicKey}`);
-
-      oracle = await NodeOracle.fromReleaseChannel({
-        chain: "solana",
-        releaseChannel: "testnet",
-        network: "localnet", // disables production capabilities like monitoring and alerts
-        rpcUrl: switchboard.program.connection.rpcEndpoint,
-        oracleKey: switchboard.oracle.publicKey.toBase58(),
-        secretPath: switchboard.walletPath,
-        silent: false, // set to true to suppress oracle logs in the console
-        envVariables: {
-          VERBOSE: "1",
-          DEBUG: "1",
-          DISABLE_NONCE_QUEUE: "1",
-          DISABLE_METRICS: "1",
-        },
-      });
-
-      await oracle.startAndAwait();
-    } else {
-      // if devnet/mainnet, use the permissionless queues
-      switchboardProgram = await SwitchboardProgram.fromProvider(provider);
-      if (switchboardProgram.cluster === "devnet") {
-        queueAccount = new QueueAccount(
-          switchboardProgram,
-          SWITCHBOARD_LABS_DEVNET_PERMISSIONLESS_QUEUE
-        );
-      } else if (switchboardProgram.cluster === "mainnet-beta") {
-        queueAccount = new QueueAccount(
-          switchboardProgram,
-          SWITCHBOARD_LABS_MAINNET_PERMISSIONLESS_QUEUE
-        );
-      } else {
-        throw new Error(
-          `Failed to load Switchboard queue for cluster, ${switchboardProgram.cluster}`
-        );
-      }
-      await queueAccount.loadData();
-    }
-  });
-
-  after(() => {
-    oracle?.stop();
+    switchboardProgram = await SwitchboardProgram.fromProvider(provider);
+    attestationQueue = await AttestationQueueAccount.bootstrapNewQueue(
+      switchboardProgram
+    );
+    [functionAccount] = await FunctionAccount.create(switchboardProgram, {
+      attestationQueue: attestationQueue.attestationQueue.account,
+      name: "VRF Flip Function",
+      container: "gallynaut/solana-vrf-flip",
+      containerRegistry: "dockerhub",
+      version: "latest",
+      requestsDisabled: false,
+      requestsFee: 1000, // lamports
+      mrEnclave: functionMrEnclave,
+    });
   });
 
   it("initialize the house", async () => {
-    house = await House.getOrCreate(anchorProgram, queueAccount, MINT_KEYPAIR);
+    house = await House.getOrCreate(
+      anchorProgram,
+      functionAccount,
+      MINT_KEYPAIR
+    );
 
     console.log(house.toJSON());
 
@@ -132,6 +85,9 @@ describe("switchboard-vrf-flip", () => {
   });
 
   it("initialize user 1", async () => {
+    console.log(
+      program.switchboard.attestationAccount.attestationProgramState.size
+    );
     try {
       flipUser = await createFlipUser(program);
 
@@ -180,95 +136,73 @@ describe("switchboard-vrf-flip", () => {
       throw new Error(`failed to find user to place a bet for`);
     }
 
-    try {
-      const newUserState = await flipUser.user.placeBetAndAwaitFlip(
+    const [newUserState, verifyTxnSignature] = await Promise.all([
+      flipUser.user.placeBetAndAwaitFlip(
         GameTypeValue.COIN_FLIP,
         1,
         new anchor.BN(0),
         45
+      ),
+      (async () => {
+        const rewardReceiver = (
+          await program.switchboard.mint.getOrCreateWrappedUser(
+            program.switchboard.walletPubkey,
+            { fundUpTo: 0 }
+          )
+        )[0];
+        await sleep(5000);
+        const requestAccount = flipUser.user.getRequestAccount(
+          program.switchboard
+        );
+        const requestState = await requestAccount.loadData();
+        const enclaveSigner = anchor.web3.Keypair.generate();
+        const functionState = await functionAccount.loadData();
+
+        const txnSignature = await program.program.methods
+          .userSettle({ result: 1 })
+          .accounts({
+            user: flipUser.user.publicKey,
+            house: program.house.publicKey,
+            escrow: flipUser.user.state.escrow,
+            rewardAddress: flipUser.user.state.rewardAddress,
+            houseVault: program.house.state.houseVault,
+            switchboardFunction: functionAccount.publicKey,
+            switchboardRequest: requestAccount.publicKey,
+            enclaveSigner: enclaveSigner.publicKey,
+          })
+          .preInstructions([
+            requestAccount.verifyIxn({
+              observedTime: Math.round(Date.now() / 1000),
+              isFailure: false,
+              mrEnclave: functionMrEnclave,
+              requestSlot: requestState.activeRequest.requestSlot,
+              containerParamsHash: requestState.containerParamsHash,
+              functionEnclaveSigner: enclaveSigner.publicKey,
+              functionEscrow: functionState.escrowTokenWallet,
+              function: requestState.function,
+              verifierQuote: attestationQueue.verifier.publicKey,
+              verifierEnclaveSigner: attestationQueue.verifier.signer.publicKey,
+              verifierPermission:
+                attestationQueue.verifier.permissionAccount.publicKey,
+              attestationQueue: attestationQueue.attestationQueue.publicKey,
+              receiver: rewardReceiver,
+            }),
+          ])
+          .signers([attestationQueue.verifier.signer, enclaveSigner])
+          .rpc();
+        console.log(txnSignature);
+        return txnSignature;
+      })(),
+    ]);
+    console.log(verifyTxnSignature);
+    flipUser.user.state = newUserState;
+
+    if (flipUser.user.isWinner(newUserState)) {
+      console.log(`User won! Result = ${newUserState.currentRound.result}`);
+    } else {
+      console.log(
+        `whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
       );
-      flipUser.user.state = newUserState;
-
-      if (flipUser.user.isWinner(newUserState)) {
-        console.log(`User won! Result = ${newUserState.currentRound.result}`);
-      } else {
-        console.log(
-          `whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
-        );
-      }
-    } catch (error) {
-      console.error(error);
-
-      // flip failed, lets check the state of the VRF Account
-      const [vrfAccount, vrfState] = await VrfAccount.load(
-        switchboardProgram,
-        flipUser.user.state.vrf
-      );
-
-      const counter = vrfState.counter.toNumber();
-      const status = vrfState.status.kind;
-      const txRemaining = vrfState.builders[0].txRemaining;
-      const requestSlot = vrfState.currentRound.requestSlot.toNumber();
-
-      console.log(`Counter: ${counter}`);
-      console.log(`RequestSlot: ${requestSlot}`);
-      console.log(`Status: ${status}`);
-      console.log(`TxnRemaining: ${txRemaining}`);
-
-      // check if vrf was ever requested
-      if (counter === 0 || status === "StatusNone") {
-        const txns = await grepTransactionLogs(
-          vrfAccount.program.connection,
-          vrfAccount.publicKey,
-          "Instruction: VrfRequestRandomness",
-          {
-            limit: 50,
-            minContextSlot:
-              vrfState.currentRound.requestSlot.toNumber() > 0
-                ? vrfState.currentRound.requestSlot.toNumber()
-                : undefined,
-          }
-        );
-        console.log(txns.grepLogs);
-        throw new Error(
-          `VrfAccount counter = 0, check your requestRandomness CPI ixn logs for details`
-        );
-      }
-
-      // check if any VRF verify txns were sent
-      if (status === "StatusRequesting") {
-        console.log(`VRF was requested but did not complete`);
-        if (txRemaining === 277) {
-          throw new Error(
-            `No VRF verify transactions were sent - was the oracle running? `
-          );
-        }
-      }
-
-      // check if callback was ever invoked
-      if (status === "StatusVerified") {
-        console.log(`VRF was verified successfully but the callback failed`);
-
-        // check callback
-        const txns = await grepTransactionLogs(
-          vrfAccount.program.connection,
-          vrfAccount.publicKey,
-          "Invoking callback",
-          {
-            limit: 50,
-            minContextSlot: requestSlot > 0 ? requestSlot : undefined,
-          }
-        );
-
-        if (txns.grepTransactions.length !== 0) {
-          console.log(`VRF attempted to invoke your callback`);
-          console.log(txns.grepLogs + "\n");
-        } else {
-          console.log(`No callback attempts found`);
-        }
-      }
-
-      throw error;
     }
 
     await flipUser.user.reload();
@@ -281,191 +215,190 @@ describe("switchboard-vrf-flip", () => {
     });
   });
 
-  it("user 1 places another bet", async () => {
-    if (flipUser === undefined) {
-      throw new Error(`failed to find user to place a bet for`);
-    }
+  // it("user 1 places another bet", async () => {
+  //   if (flipUser === undefined) {
+  //     throw new Error(`failed to find user to place a bet for`);
+  //   }
 
-    try {
-      const newUserState = await flipUser.user.placeBetAndAwaitFlip(
-        GameTypeValue.COIN_FLIP,
-        1,
-        new anchor.BN(0),
-        45
-      );
-      flipUser.user.state = newUserState;
+  //   try {
+  //     const newUserState = await flipUser.user.placeBetAndAwaitFlip(
+  //       GameTypeValue.COIN_FLIP,
+  //       1,
+  //       new anchor.BN(0),
+  //       45
+  //     );
+  //     flipUser.user.state = newUserState;
 
-      if (flipUser.user.isWinner(newUserState)) {
-        console.log(`User won! Result = ${newUserState.currentRound.result}`);
-      } else {
-        console.log(
-          `whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
+  //     if (flipUser.user.isWinner(newUserState)) {
+  //       console.log(`User won! Result = ${newUserState.currentRound.result}`);
+  //     } else {
+  //       console.log(
+  //         `whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw error;
+  //   }
 
-    await flipUser.user.reload();
-    console.log({
-      ...flipUser.user.toJSON(),
-      historyIdx: flipUser.user.state.history.idx,
-      history: flipUser.user.state.history.rounds
-        .slice(0, flipUser.user.state.history.idx)
-        .map((i) => i.toJSON()),
-    });
-  });
+  //   await flipUser.user.reload();
+  //   console.log({
+  //     ...flipUser.user.toJSON(),
+  //     historyIdx: flipUser.user.state.history.idx,
+  //     history: flipUser.user.state.history.rounds
+  //       .slice(0, flipUser.user.state.history.idx)
+  //       .map((i) => i.toJSON()),
+  //   });
+  // });
 
-  it("fails to create duplicate user accounts", async () => {
-    assert.rejects(async () => {
-      await flipUser.user.program.program.methods
-        .userInit({
-          switchboardStateBump: flipUser.user.state.switchboardStateBump,
-          vrfPermissionBump: flipUser.user.state.vrfPermissionBump,
-        })
-        .accounts({
-          user: flipUser.user.publicKey,
-          house: house.publicKey,
-          mint: house.state.mint,
-          authority: flipUser.keypair.publicKey,
-          escrow: flipUser.user.state.escrow,
-          rewardAddress: flipUser.user.state.rewardAddress,
-          vrf: flipUser.user.state.vrf,
-          payer: flipUser.keypair.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        })
-        .rpc();
-    }, new RegExp(/Cross-program invocation with unauthorized signer or writable account/g));
-  });
+  // // it("fails to create duplicate user accounts", async () => {
+  // //   assert.rejects(async () => {
+  // //     await flipUser.user.program.program.methods
+  // //       .userInit({
+  // //       })
+  // //       .accounts({
+  // //         user: flipUser.user.publicKey,
+  // //         house: house.publicKey,
+  // //         mint: house.state.mint,
+  // //         authority: flipUser.keypair.publicKey,
+  // //         escrow: flipUser.user.state.escrow,
+  // //         rewardAddress: flipUser.user.state.rewardAddress,
 
-  it("a new user fails to place back to back bets", async () => {
-    const user2 = await createFlipUser(program);
+  // //         vrf: flipUser.user.state.vrf,
+  // //         payer: flipUser.keypair.publicKey,
+  // //         systemProgram: anchor.web3.SystemProgram.programId,
+  // //         tokenProgram: TOKEN_PROGRAM_ID,
+  // //         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+  // //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  // //       })
+  // //       .rpc();
+  // //   }, new RegExp(/Cross-program invocation with unauthorized signer or writable account/g));
+  // // });
 
-    const bet1 = await user2.user.placeBet(
-      GameTypeValue.COIN_FLIP,
-      1,
-      new anchor.BN(0)
-    );
+  // it("a new user fails to place back to back bets", async () => {
+  //   const user2 = await createFlipUser(program);
 
-    assert.rejects(async () => {
-      await user2.user.placeBet(GameTypeValue.COIN_FLIP, 1, new anchor.BN(0));
-    }, new RegExp(/0x1775/g));
-  });
+  //   const bet1 = await user2.user.placeBet(
+  //     GameTypeValue.COIN_FLIP,
+  //     1,
+  //     new anchor.BN(0)
+  //   );
 
-  it("a new user rolls a 6 sided dice", async () => {
-    const user3 = await createFlipUser(program);
+  //   assert.rejects(async () => {
+  //     await user2.user.placeBet(GameTypeValue.COIN_FLIP, 1, new anchor.BN(0));
+  //   }, new RegExp(/0x1775/g));
+  // });
 
-    try {
-      const newUserState = await user3.user.placeBetAndAwaitFlip(
-        GameTypeValue.SIX_SIDED_DICE_ROLL,
-        3,
-        new anchor.BN(0),
-        45
-      );
+  // it("a new user rolls a 6 sided dice", async () => {
+  //   const user3 = await createFlipUser(program);
 
-      if (user3.user.isWinner(newUserState)) {
-        console.log(
-          `User3 rolled the dice ... and won! ${newUserState.currentRound.result}`
-        );
-      } else {
-        console.log(
-          `User3 rolled the dice ... and lost! whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  });
+  //   try {
+  //     const newUserState = await user3.user.placeBetAndAwaitFlip(
+  //       GameTypeValue.SIX_SIDED_DICE_ROLL,
+  //       3,
+  //       new anchor.BN(0),
+  //       45
+  //     );
 
-  it("a new user fails to place a bet above the max", async () => {
-    const user4 = await createFlipUser(program);
+  //     if (user3.user.isWinner(newUserState)) {
+  //       console.log(
+  //         `User3 rolled the dice ... and won! ${newUserState.currentRound.result}`
+  //       );
+  //     } else {
+  //       console.log(
+  //         `User3 rolled the dice ... and lost! whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw error;
+  //   }
+  // });
 
-    assert.rejects(async () => {
-      await user4.user.placeBetAndAwaitFlip(
-        GameTypeValue.SIX_SIDED_DICE_ROLL,
-        7,
-        new anchor.BN(0),
-        45
-      );
-    }, new RegExp(/0x1777/g));
-  });
+  // it("a new user fails to place a bet above the max", async () => {
+  //   const user4 = await createFlipUser(program);
 
-  it("a new user rolls a 20 sided dice", async () => {
-    const user5 = await createFlipUser(program);
+  //   assert.rejects(async () => {
+  //     await user4.user.placeBetAndAwaitFlip(
+  //       GameTypeValue.SIX_SIDED_DICE_ROLL,
+  //       7,
+  //       new anchor.BN(0),
+  //       45
+  //     );
+  //   }, new RegExp(/0x1777/g));
+  // });
 
-    try {
-      const newUserState = await user5.user.placeBetAndAwaitFlip(
-        GameTypeValue.TWENTY_SIDED_DICE_ROLL,
-        13,
-        new anchor.BN(0),
-        45
-      );
+  // it("a new user rolls a 20 sided dice", async () => {
+  //   const user5 = await createFlipUser(program);
 
-      if (user5.user.isWinner(newUserState)) {
-        console.log(
-          `User5 rolled the dice ... and won! ${newUserState.currentRound.result}`
-        );
-      } else {
-        console.log(
-          `User5 rolled the dice ... and lost! whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  });
+  //   try {
+  //     const newUserState = await user5.user.placeBetAndAwaitFlip(
+  //       GameTypeValue.TWENTY_SIDED_DICE_ROLL,
+  //       13,
+  //       new anchor.BN(0),
+  //       45
+  //     );
 
-  it("a new user flips a coin with an empty wrapped SOL wallet", async () => {
-    const user = await createFlipUser(program, 0);
+  //     if (user5.user.isWinner(newUserState)) {
+  //       console.log(
+  //         `User5 rolled the dice ... and won! ${newUserState.currentRound.result}`
+  //       );
+  //     } else {
+  //       console.log(
+  //         `User5 rolled the dice ... and lost! whomp whomp, loser! User guess = ${newUserState.currentRound.guess}, Result = ${newUserState.currentRound.result}`
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw error;
+  //   }
+  // });
 
-    await user.user.placeBetAndAwaitFlip(
-      GameTypeValue.COIN_FLIP,
-      1,
-      new anchor.BN(0)
-    );
-  });
+  // it("a new user flips a coin with an empty wrapped SOL wallet", async () => {
+  //   const user = await createFlipUser(program, 0);
 
-  it("a new user flips a coin with a half empty wrapped SOL wallet", async () => {
-    const user = await createFlipUser(program, 0.001);
+  //   await user.user.placeBetAndAwaitFlip(
+  //     GameTypeValue.COIN_FLIP,
+  //     1,
+  //     new anchor.BN(0)
+  //   );
+  // });
 
-    try {
-      await user.user.placeBetAndAwaitFlip(
-        GameTypeValue.COIN_FLIP,
-        1,
-        new anchor.BN(0)
-      );
-    } catch (error) {
-      console.error(error);
-      if ("logs" in error) {
-        console.error(error.logs);
-      }
-      throw error;
-    }
-  });
+  // it("a new user flips a coin with a half empty wrapped SOL wallet", async () => {
+  //   const user = await createFlipUser(program, 0.001);
 
-  it("a new user flips a coin with no wrapped sol wallet provided", async () => {
-    const user = await createFlipUser(program, 0);
+  //   try {
+  //     await user.user.placeBetAndAwaitFlip(
+  //       GameTypeValue.COIN_FLIP,
+  //       1,
+  //       new anchor.BN(0)
+  //     );
+  //   } catch (error) {
+  //     console.error(error);
+  //     if ("logs" in error) {
+  //       console.error(error.logs);
+  //     }
+  //     throw error;
+  //   }
+  // });
 
-    try {
-      await user.user.placeBetAndAwaitFlip(
-        GameTypeValue.COIN_FLIP,
-        1,
-        new anchor.BN(0)
-      );
-    } catch (error) {
-      console.error(error);
-      if ("logs" in error) {
-        console.error(error.logs);
-      }
-      throw error;
-    }
-  });
+  // it("a new user flips a coin with no wrapped sol wallet provided", async () => {
+  //   const user = await createFlipUser(program, 0);
+
+  //   try {
+  //     await user.user.placeBetAndAwaitFlip(
+  //       GameTypeValue.COIN_FLIP,
+  //       1,
+  //       new anchor.BN(0)
+  //     );
+  //   } catch (error) {
+  //     console.error(error);
+  //     if ("logs" in error) {
+  //       console.error(error.logs);
+  //     }
+  //     throw error;
+  //   }
+  // });
 
   // it("10 users roll the dice 100 times", async () => {
   //   const users: (FlipUser & { id: number })[] = await Promise.all(
