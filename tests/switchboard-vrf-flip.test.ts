@@ -1,8 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { SwitchboardVrfFlip } from "../target/types/switchboard_vrf_flip";
-import { FlipProgram, GameTypeValue, House, User } from "../client";
-import { createFlipUser, FlipUser } from "../client/utils";
 import assert from "assert";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
