@@ -11,7 +11,6 @@ import {
   BackpackWalletAdapter,
   SolflareWalletAdapter,
   PhantomWalletAdapter,
-  NightlyWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 
 // Default styles that can be overridden by your app
@@ -22,20 +21,19 @@ const App: React.FC = () => {
 
   // wallet connection
   const network = WalletAdapterNetwork.Devnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const rpcEndpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(
     () => [
       new BackpackWalletAdapter(),
       new PhantomWalletAdapter(),
-      new NightlyWalletAdapter(),
       new SolflareWalletAdapter(),
     ],
     [network]
   );
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets}>
+    <ConnectionProvider endpoint={rpcEndpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <DataLayer>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
