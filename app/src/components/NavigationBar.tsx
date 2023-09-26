@@ -3,7 +3,8 @@ import React from 'react';
 import { hooks, thunks } from '../data';
 import { NAVBAR_HEIGHT, NAVBAR_HORZ_PAD, zIndices } from '../util/const';
 import css from '../util/css';
-import { WalletConnectButton, WalletDisconnectButton, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const Title: React.FC = () => {
   return (
@@ -17,6 +18,66 @@ const Title: React.FC = () => {
     >
       🎲 vrf-demo
     </span>
+  );
+};
+
+const WalletButton: React.FC = () => {
+  const { setVisible: setWalletModalVisible } = useWalletModal();
+  const dispatch = hooks.useThunkDispatch();
+  const { publicKey, disconnect } = useWallet();
+  const [hovered, setHovered] = React.useState(false);
+
+  const content = React.useMemo(() => {
+    if (publicKey) {
+      if (hovered) return 'Disconnect';
+
+      const pubkey = publicKey.toBase58();
+      const truncatedPubkey = `${pubkey.slice(0, 5)}...${pubkey.slice(-5)}`;
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          Connected as
+          <span style={{ fontFamily: 'Fira Code' }}>{truncatedPubkey}</span>
+        </div>
+      );
+    }
+    return 'Connect Wallet';
+  }, [publicKey, hovered]);
+
+  const onWalletButtonClick = React.useCallback(() => {
+    if (!publicKey) return setWalletModalVisible(true)
+
+    dispatch(thunks.log({ message: `Disconnecting wallet ${publicKey.toBase58()}` }));
+    disconnect();
+  }, [publicKey, disconnect, setWalletModalVisible]);
+
+  return (
+    <Box
+      sx={{
+        ...css.noUserSelect,
+        ...css.walletText,
+        position: 'float',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '40px',
+        minWidth: '140px',
+        color: 'white',
+        textTransform: 'none',
+        lineHeight: 1.2,
+        borderStyle: 'double',
+        '&:hover': {
+          backgroundColor: '#FFFFFF28',
+          cursor: 'pointer',
+        },
+      }}
+      onMouseOver={() => setHovered && setHovered(true)}
+      onMouseEnter={() => setHovered && setHovered(true)}
+      onMouseOut={() => setHovered && setHovered(false)}
+      onMouseLeave={() => setHovered && setHovered(false)}
+      onClick={onWalletButtonClick}
+    >
+      {content}
+    </Box>
   );
 };
 
@@ -44,7 +105,7 @@ const NavigationBar: React.FC = () => {
         }}
       >
         <Title />
-        <WalletMultiButton />
+        <WalletButton />
       </div>
     </Box>
   );
