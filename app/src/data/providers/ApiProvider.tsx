@@ -310,6 +310,9 @@ class ApiState implements PrivateApiInterface {
    * Play the game.
    */
   private playGame = async (args: string[]) => {
+    const userPublicKey = this.wallet.publicKey;
+    if (!userPublicKey) throw ApiError.userNotConnected();
+
     const game = games[this.gameMode];
 
     // Gather necessary programs.
@@ -329,7 +332,7 @@ class ApiState implements PrivateApiInterface {
 
     this.log(`Building bet request...`);
     const request = await user
-      .placeBetReq(this.gameMode, guess, new anchor.BN(bet).mul(new anchor.BN(RIBS_PER_RACK)), user.publicKey)
+      .placeBetReq(this.gameMode, guess, new anchor.BN(bet).mul(new anchor.BN(RIBS_PER_RACK)), userPublicKey)
       .then((request) => this.packSignAndSubmit([request]))
       .catch((error) => {
         console.error(error);

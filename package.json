@@ -18,11 +18,11 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.27.0",
     "@coral-xyz/borsh": "^0.27.0",
-    "@solana/spl-token": "^0.3.6",
-    "@solana/web3.js": "^1.74.0",
-    "@switchboard-xyz/common": "^2.2.3",
+    "@solana/spl-token": "^0.3.8",
+    "@solana/web3.js": "^1.78.5",
+    "@switchboard-xyz/common": "^2.3.6",
     "@switchboard-xyz/oracle": "^2.1.13",
-    "@switchboard-xyz/solana.js": "^2.2.0",
+    "@switchboard-xyz/solana.js": "^2.7.1",
     "chalk": "4"
   },
   "devDependencies": {

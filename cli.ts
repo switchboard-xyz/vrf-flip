@@ -16,11 +16,7 @@ const yargs = require("yargs");
 const { hideBin } = require("yargs/helpers");
 // import yargs from "yargs";
 // import { hideBin } from "yargs/helpers";
-import {
-  QueueAccount,
-  SBV2_MAINNET_PID,
-  SwitchboardProgram,
-} from "@switchboard-xyz/solana.js";
+import { QueueAccount, SwitchboardProgram } from "@switchboard-xyz/solana.js";
 import chalk from "chalk";
 import fs from "fs";
 import {
@@ -608,10 +604,7 @@ async function loadCli(
     { commitment: DEFAULT_COMMITMENT }
   );
 
-  const switchboardProgram = await SwitchboardProgram.fromProvider(
-    provider,
-    SBV2_MAINNET_PID
-  );
+  const switchboardProgram = await SwitchboardProgram.fromProvider(provider);
 
   // load VRF Client program
   // @TODO load IDL asynchronously?

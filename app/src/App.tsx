@@ -8,7 +8,6 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { clusterApiUrl } from '@solana/web3.js';
 import {
-  BackpackWalletAdapter,
   SolflareWalletAdapter,
   PhantomWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
@@ -24,7 +23,6 @@ const App: React.FC = () => {
   const rpcEndpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(
     () => [
-      new BackpackWalletAdapter(),
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
     ],
