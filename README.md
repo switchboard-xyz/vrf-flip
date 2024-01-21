@@ -1,3 +1,7 @@
+# DEMO
+
+https://vrf-demo.switchboard.xyz/ ( believe this is devnet only )
+
 # Switchboard VRF Flip
 
 Utilize Switchboard's verifiable randomness to simulate a heads or tails coin
